@@ -637,7 +637,7 @@ def profile():
         "profile.html",
         username=session.get("username", ""),
     )
-    
+
 # --------------------------------------------------
 # MONTHLY BUDGET PAGE
 # --------------------------------------------------
@@ -737,7 +737,7 @@ def budget_page():
     )
 
 
-
+   init_db()
 # --------------------------------------------------
 # START APPLICATION
 # IMPORTANT: Keep this block at the very bottom.
