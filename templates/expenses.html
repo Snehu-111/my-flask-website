@@ -1,0 +1,103 @@
+
+{% extends "base.html" %}
+
+{% block title %}Expenses | Student Finance{% endblock %}
+{% block heading %}My Expenses{% endblock %}
+
+{% block content %}
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">RECORD YOUR SPENDING</p>
+            <h2>＋ Add an Expense</h2>
+        </div>
+    </div>
+
+    <form action="{{ url_for('add_expense') }}" method="POST" class="expense-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <label>Expense name
+            <input type="text" name="title" maxlength="100"
+                   placeholder="e.g. College lunch" required>
+        </label>
+
+        <label>Category
+            <select name="category" required>
+                <option value="">Choose category</option>
+                <option>Food</option>
+                <option>Travel</option>
+                <option>Education</option>
+                <option>Shopping</option>
+                <option>Bills</option>
+                <option>Other</option>
+            </select>
+        </label>
+
+        <label>Amount (₹)
+            <input type="number" name="amount" min="0.01"
+                   max="10000000" step="0.01" required>
+        </label>
+
+        <label>Date
+            <input type="date" name="date" id="expense-date" required>
+        </label>
+
+        <div class="form-action">
+            <button type="submit">＋ Add Expense</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">ALL RECORDS</p>
+            <h2>Expense History</h2>
+        </div>
+        <span class="live-badge">{{ expenses|length }} records</span>
+    </div>
+
+    {% if expenses %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr>
+                    <th>Date</th><th>Expense</th><th>Category</th>
+                    <th>Amount</th><th>Action</th>
+                </tr>
+            </thead>
+            <tbody>
+                {% for expense in expenses %}
+                <tr>
+                    <td>{{ expense.date }}</td>
+                    <td>{{ expense.title }}</td>
+                    <td><span class="category-tag">{{ expense.category }}</span></td>
+                    <td class="amount">₹{{ "%.2f"|format(expense.amount|float) }}</td>
+                    <td>
+                        <form action="{{ url_for('delete_expense', expense_id=expense.id|int) }}"
+                              method="POST" class="inline-form"
+                              onsubmit="return confirm('Delete this expense?');">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <button class="delete-button" type="submit">Delete</button>
+                        </form>
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">No expenses added yet.</div>
+    {% endif %}
+</section>
+
+<script>
+const dateInput = document.getElementById("expense-date");
+if (dateInput && !dateInput.value) {
+    const now = new Date();
+    dateInput.value = new Date(
+        now.getTime() - now.getTimezoneOffset() * 60000
+    ).toISOString().slice(0, 10);
+}
+</script>
+{% endblock %}

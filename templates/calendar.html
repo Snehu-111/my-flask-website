@@ -1,0 +1,768 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Student Expense Tracker - Calendar</title>
+
+<style>
+* {
+    box-sizing: border-box;
+}
+
+body {
+    margin: 0;
+    font-family: Arial, sans-serif;
+    background: #f3f6fb;
+    color: #172033;
+}
+
+header {
+    background: #173b75;
+    color: white;
+    padding: 22px;
+    text-align: center;
+}
+
+.container {
+    max-width: 1100px;
+    margin: 25px auto;
+    padding: 16px;
+}
+
+.summary {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 15px;
+    margin-bottom: 20px;
+}
+
+.card, .panel {
+    background: white;
+    padding: 20px;
+    border-radius: 12px;
+    box-shadow: 0 3px 12px #17203312;
+}
+
+.card p {
+    color: #667085;
+    margin: 0 0 10px;
+}
+
+.card h2 {
+    margin: 0;
+    color: #173b75;
+    overflow-wrap: anywhere;
+}
+
+.toolbar {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+}
+
+button, select, input, textarea {
+    font: inherit;
+}
+
+button {
+    border: 0;
+    border-radius: 7px;
+    padding: 10px 14px;
+    cursor: pointer;
+}
+
+.nav-btn, .primary {
+    background: #2456a6;
+    color: white;
+}
+
+.calendar {
+    display: grid;
+    grid-template-columns: repeat(7, minmax(0, 1fr));
+    gap: 5px;
+}
+
+.weekday {
+    text-align: center;
+    padding: 10px 0;
+    color: #667085;
+    font-size: 13px;
+    font-weight: bold;
+}
+
+.day {
+    min-height: 75px;
+    border: 1px solid #e2e8f0;
+    background: white;
+    border-radius: 7px;
+    padding: 7px;
+    text-align: left;
+    color: #172033;
+}
+
+.day:hover {
+    border-color: #2456a6;
+}
+
+.day.selected {
+    border: 2px solid #2456a6;
+    background: #eaf1ff;
+}
+
+.day.today {
+    outline: 2px solid #16a34a;
+    outline-offset: -3px;
+}
+
+.day-amount {
+    display: block;
+    margin-top: 8px;
+    font-size: 11px;
+    color: #15803d;
+    overflow-wrap: anywhere;
+}
+
+.panel {
+    margin-top: 20px;
+}
+
+.panel h2 {
+    margin-top: 0;
+}
+
+.form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 14px;
+}
+
+.field {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.field input, .field select, .field textarea {
+    width: 100%;
+    padding: 11px;
+    border: 1px solid #cbd5e1;
+    border-radius: 7px;
+    background: white;
+}
+
+.full {
+    grid-column: 1 / -1;
+}
+
+.total {
+    font-size: 23px;
+    font-weight: bold;
+    color: #15803d;
+}
+
+.expense {
+    padding: 14px 0;
+    border-bottom: 1px solid #e2e8f0;
+    display: flex;
+    justify-content: space-between;
+    gap: 12px;
+}
+
+.expense small {
+    display: block;
+    color: #667085;
+    margin-top: 5px;
+}
+
+.actions {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+.edit {
+    background: #eaf1ff;
+    color: #173b75;
+}
+
+.delete {
+    background: #fee2e2;
+    color: #b91c1c;
+}
+
+.muted {
+    color: #667085;
+}
+
+@media (max-width: 600px) {
+    .container {
+        padding: 10px;
+        margin: 10px auto;
+    }
+
+    .summary {
+        grid-template-columns: 1fr;
+        gap: 9px;
+    }
+
+    .card {
+        padding: 14px;
+    }
+
+    .toolbar {
+        flex-wrap: wrap;
+    }
+
+    .day {
+        min-height: 54px;
+        padding: 4px;
+        font-size: 12px;
+    }
+
+    .day-amount {
+        font-size: 9px;
+        margin-top: 5px;
+    }
+
+    .calendar {
+        gap: 3px;
+    }
+
+    .form-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .full {
+        grid-column: auto;
+    }
+
+    .expense {
+        flex-wrap: wrap;
+    }
+}
+</style>
+</head>
+
+<body>
+
+<header>
+    <h1>Student Expense Tracker</h1>
+    <p>Calendar &amp; Daily Expenses</p>
+</header>
+
+<main class="container">
+
+    <section class="summary">
+        <div class="card">
+            <p>Selected Date Total</p>
+            <h2 id="dailyTotal">₹0.00</h2>
+        </div>
+        <div class="card">
+            <p>Monthly Total</p>
+            <h2 id="monthlyTotal">₹0.00</h2>
+        </div>
+        <div class="card">
+            <p>Selected Date</p>
+            <h2 id="selectedLabel">21 Oct 2026</h2>
+        </div>
+    </section>
+
+    <section class="panel">
+        <div class="toolbar">
+            <button class="nav-btn" id="prevMonth">← Previous</button>
+            <h2 id="monthTitle">October 2026</h2>
+            <button class="nav-btn" id="nextMonth">Next →</button>
+        </div>
+
+        <div class="toolbar">
+            <label>
+                Jump to month:
+                <select id="monthSelect">
+                    <option value="0">January</option>
+                    <option value="1">February</option>
+                    <option value="2">March</option>
+                    <option value="3">April</option>
+                    <option value="4">May</option>
+                    <option value="5">June</option>
+                    <option value="6">July</option>
+                    <option value="7">August</option>
+                    <option value="8">September</option>
+                    <option value="9" selected>October</option>
+                    <option value="10">November</option>
+                    <option value="11">December</option>
+                </select>
+            </label>
+
+            <button class="edit" id="todayBtn">Today</button>
+        </div>
+
+        <div class="calendar" id="calendar"></div>
+    </section>
+
+    <section class="panel">
+        <h2 id="dayHeading">Expenses</h2>
+        <p class="muted">Click any date on the calendar to view its expenses.</p>
+        <div id="expenseList"></div>
+    </section>
+
+    <section class="panel" id="expenseFormPanel">
+        <h2 id="formHeading">Add Expense</h2>
+
+        <form id="expenseForm">
+            <div class="form-grid">
+
+                <label class="field">
+                    Expense title
+                    <input id="expenseTitle" required
+                           placeholder="e.g. College lunch">
+                </label>
+
+                <label class="field">
+                    Amount (₹)
+                    <input id="amount" type="number"
+                           min="0.01" step="0.01" required
+                           placeholder="e.g. 50">
+                </label>
+
+                <label class="field">
+                    Date
+                    <input id="expenseDate" type="date" required>
+                </label>
+
+                <label class="field">
+                    Time
+                    <input id="expenseTime" type="time" required>
+                </label>
+
+                <label class="field">
+                    Category
+                    <select id="category" required>
+                        <option value="Food">Food</option>
+                        <option value="Travel">Travel</option>
+                        <option value="Books">Books</option>
+                        <option value="College Fees">College Fees</option>
+                        <option value="Shopping">Shopping</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </label>
+
+                <label class="field">
+                    Payment method
+                    <select id="payment">
+                        <option>Cash</option>
+                        <option>UPI</option>
+                        <option>Card</option>
+                        <option>Other</option>
+                    </select>
+                </label>
+
+                <label class="field full">
+                    Notes (optional)
+                    <textarea id="notes" rows="2"
+                              placeholder="Additional details"></textarea>
+                </label>
+
+                <div class="full">
+                    <button class="primary" type="submit" id="saveBtn">
+                        Save Expense
+                    </button>
+                    <button type="button" id="cancelEdit" hidden>
+                        Cancel Edit
+                    </button>
+                </div>
+            </div>
+        </form>
+    </section>
+
+    <section class="panel">
+        <h2>Monthly Category Summary</h2>
+        <div id="categorySummary"></div>
+    </section>
+
+</main>
+
+<script>
+const $ = id => document.getElementById(id);
+
+const STORAGE_KEY = "studentTrackerCalendarExpenses";
+
+let expenses = [];
+
+try {
+    expenses = JSON.parse(
+        localStorage.getItem(STORAGE_KEY) || "[]"
+    );
+    if (!Array.isArray(expenses)) expenses = [];
+} catch {
+    expenses = [];
+}
+
+const now = new Date();
+let viewYear = 2026;
+let viewMonth = 9; // October
+let selectedDate = "2026-10-21";
+let editingId = null;
+
+function money(value) {
+    return "₹" + Number(value).toLocaleString("en-IN", {
+        minimumFractionDigits: 2,
+        maximumFractionDigits: 2
+    });
+}
+
+function dateKey(year, month, day) {
+    return year + "-" +
+        String(month + 1).padStart(2, "0") + "-" +
+        String(day).padStart(2, "0");
+}
+
+function readableDate(key) {
+    const [y, m, d] = key.split("-").map(Number);
+    return new Date(y, m - 1, d).toLocaleDateString(
+        "en-IN",
+        { day: "numeric", month: "short", year: "numeric" }
+    );
+}
+
+function saveData() {
+    try {
+        localStorage.setItem(
+            STORAGE_KEY,
+            JSON.stringify(expenses)
+        );
+        return true;
+    } catch {
+        alert("Could not save data in this browser.");
+        return false;
+    }
+}
+
+function dayExpenses(key) {
+    return expenses.filter(e => e.date === key);
+}
+
+function renderCalendar() {
+    $("monthTitle").textContent =
+        new Date(viewYear, viewMonth, 1).toLocaleDateString(
+            "en-IN",
+            { month: "long", year: "numeric" }
+        );
+
+    $("monthSelect").value = viewMonth;
+    $("calendar").innerHTML = "";
+
+    ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"]
+        .forEach(name => {
+            const el = document.createElement("div");
+            el.className = "weekday";
+            el.textContent = name;
+            $("calendar").appendChild(el);
+        });
+
+    const firstDay = new Date(viewYear, viewMonth, 1).getDay();
+    const totalDays = new Date(
+        viewYear, viewMonth + 1, 0
+    ).getDate();
+
+    for (let i = 0; i < firstDay; i++) {
+        $("calendar").appendChild(document.createElement("div"));
+    }
+
+    for (let day = 1; day <= totalDays; day++) {
+        const key = dateKey(viewYear, viewMonth, day);
+        const dayItems = dayExpenses(key);
+        const total = dayItems.reduce(
+            (sum, item) => sum + Number(item.amount), 0
+        );
+
+        const btn = document.createElement("button");
+        btn.className = "day";
+        btn.type = "button";
+
+        if (key === selectedDate) btn.classList.add("selected");
+
+        if (
+            key === dateKey(
+                now.getFullYear(), now.getMonth(), now.getDate()
+            )
+        ) {
+            btn.classList.add("today");
+        }
+
+        const number = document.createElement("span");
+        number.textContent = day;
+        btn.appendChild(number);
+
+        if (dayItems.length) {
+            const amount = document.createElement("span");
+            amount.className = "day-amount";
+            amount.textContent = money(total);
+            btn.appendChild(amount);
+        }
+
+        btn.addEventListener("click", () => {
+            selectedDate = key;
+            $("expenseDate").value = key;
+            cancelEdit();
+            renderAll();
+        });
+
+        $("calendar").appendChild(btn);
+    }
+}
+
+function renderExpenses() {
+    $("selectedLabel").textContent = readableDate(selectedDate);
+    $("dayHeading").textContent =
+        "Expenses — " + readableDate(selectedDate);
+
+    const items = dayExpenses(selectedDate).sort(
+        (a, b) => a.time.localeCompare(b.time)
+    );
+
+    const total = items.reduce(
+        (sum, e) => sum + Number(e.amount), 0
+    );
+
+    $("dailyTotal").textContent = money(total);
+
+    $("expenseList").innerHTML = "";
+
+    if (!items.length) {
+        const empty = document.createElement("p");
+        empty.className = "muted";
+        empty.textContent = "No expenses recorded for this date.";
+        $("expenseList").appendChild(empty);
+    }
+
+    items.forEach(e => {
+        const row = document.createElement("div");
+        row.className = "expense";
+
+        const info = document.createElement("div");
+        const title = document.createElement("strong");
+        title.textContent = e.title;
+
+        const details = document.createElement("small");
+        details.textContent =
+            e.time + " · " + e.category + " · " + e.payment;
+
+        const note = document.createElement("small");
+        note.textContent = e.notes || "";
+
+        info.append(title, details, note);
+
+        const right = document.createElement("div");
+        right.className = "actions";
+
+        const price = document.createElement("strong");
+        price.textContent = money(e.amount);
+
+        const edit = document.createElement("button");
+        edit.className = "edit";
+        edit.textContent = "Edit";
+        edit.onclick = () => startEdit(e.id);
+
+        const del = document.createElement("button");
+        del.className = "delete";
+        del.textContent = "Delete";
+        del.onclick = () => deleteExpense(e.id);
+
+        right.append(price, edit, del);
+        row.append(info, right);
+        $("expenseList").appendChild(row);
+    });
+}
+
+function renderSummary() {
+    const prefix = dateKey(viewYear, viewMonth, 1).slice(0, 7);
+
+    const monthly = expenses.filter(
+        e => e.date.startsWith(prefix)
+    );
+
+    const total = monthly.reduce(
+        (sum, e) => sum + Number(e.amount), 0
+    );
+
+    $("monthlyTotal").textContent = money(total);
+    $("categorySummary").innerHTML = "";
+
+    const totals = {};
+
+    monthly.forEach(e => {
+        totals[e.category] =
+            (totals[e.category] || 0) + Number(e.amount);
+    });
+
+    const categories = Object.entries(totals);
+
+    if (!categories.length) {
+        const p = document.createElement("p");
+        p.className = "muted";
+        p.textContent = "No expenses for this month yet.";
+        $("categorySummary").appendChild(p);
+    }
+
+    categories.forEach(([name, amount]) => {
+        const p = document.createElement("p");
+        p.textContent = name + ": " + money(amount);
+        $("categorySummary").appendChild(p);
+    });
+}
+
+function renderAll() {
+    renderCalendar();
+    renderExpenses();
+    renderSummary();
+}
+
+function cancelEdit() {
+    editingId = null;
+    $("expenseForm").reset();
+    $("expenseDate").value = selectedDate;
+    $("formHeading").textContent = "Add Expense";
+    $("saveBtn").textContent = "Save Expense";
+    $("cancelEdit").hidden = true;
+}
+
+function startEdit(id) {
+    const e = expenses.find(item => item.id === id);
+    if (!e) return;
+
+    editingId = id;
+    $("expenseTitle").value = e.title;
+    $("amount").value = e.amount;
+    $("expenseDate").value = e.date;
+    $("expenseTime").value = e.time;
+    $("category").value = e.category;
+    $("payment").value = e.payment;
+    $("notes").value = e.notes || "";
+
+    $("formHeading").textContent = "Edit Expense";
+    $("saveBtn").textContent = "Update Expense";
+    $("cancelEdit").hidden = false;
+
+    $("expenseFormPanel").scrollIntoView({
+        behavior: "smooth"
+    });
+}
+
+function deleteExpense(id) {
+    if (!confirm("Delete this expense?")) return;
+
+    const oldExpenses = expenses;
+    expenses = expenses.filter(e => e.id !== id);
+
+    if (!saveData()) {
+        expenses = oldExpenses;
+        return;
+    }
+
+    if (editingId === id) cancelEdit();
+    renderAll();
+}
+
+$("expenseForm").addEventListener("submit", event => {
+    event.preventDefault();
+
+    const date = $("expenseDate").value;
+    const amount = Number($("amount").value);
+
+    if (!date || !Number.isFinite(amount) || amount <= 0) {
+        alert("Please enter a valid date and amount.");
+        return;
+    }
+
+    const item = {
+        id: editingId || (
+            Date.now().toString() + Math.random().toString(16).slice(2)
+        ),
+        title: $("expenseTitle").value.trim(),
+        amount,
+        date,
+        time: $("expenseTime").value,
+        category: $("category").value,
+        payment: $("payment").value,
+        notes: $("notes").value.trim()
+    };
+
+    if (!item.title || !item.time) {
+        alert("Please enter the title and time.");
+        return;
+    }
+
+    const oldExpenses = expenses;
+
+    if (editingId) {
+        expenses = expenses.map(
+            e => e.id === editingId ? item : e
+        );
+    } else {
+        expenses.push(item);
+    }
+
+    if (!saveData()) {
+        expenses = oldExpenses;
+        return;
+    }
+
+    selectedDate = date;
+    const [y, m] = date.split("-").map(Number);
+    viewYear = y;
+    viewMonth = m - 1;
+
+    cancelEdit();
+    renderAll();
+});
+
+function moveMonth(change) {
+    viewMonth += change;
+
+    if (viewMonth < 0) {
+        viewMonth = 11;
+        viewYear--;
+    }
+
+    if (viewMonth > 11) {
+        viewMonth = 0;
+        viewYear++;
+    }
+
+    selectedDate = dateKey(viewYear, viewMonth, 1);
+    cancelEdit();
+    renderAll();
+}
+
+$("prevMonth").onclick = () => moveMonth(-1);
+$("nextMonth").onclick = () => moveMonth(1);
+
+$("monthSelect").onchange = event => {
+    viewMonth = Number(event.target.value);
+    selectedDate = dateKey(viewYear, viewMonth, 1);
+    cancelEdit();
+    renderAll();
+};
+
+$("todayBtn").onclick = () => {
+    viewYear = now.getFullYear();
+    viewMonth = now.getMonth();
+    selectedDate = dateKey(
+        now.getFullYear(), now.getMonth(), now.getDate()
+    );
+    cancelEdit();
+    renderAll();
+};
+
+$("cancelEdit").onclick = cancelEdit;
+$("expenseDate").value = selectedDate;
+
+renderAll();
+</script>
+
+</body>
+</html>

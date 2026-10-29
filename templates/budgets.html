@@ -1,0 +1,130 @@
+
+{% extends "base.html" %}
+
+{% block title %}Monthly Budget{% endblock %}
+
+{% block heading %}Monthly Budget{% endblock %}
+
+{% block content %}
+
+<div class="budget-intro panel">
+    <h2>Plan your spending</h2>
+    <p>
+        Set a spending limit for each category and track your
+        expenses for {{ current_month }}.
+    </p>
+</div>
+
+<div class="panel budget-form-panel">
+    <h2>Set or Update Budget</h2>
+
+    <form method="POST" action="{{ url_for('budget_page') }}"
+          class="budget-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <label for="category">Expense Category</label>
+        <input
+            id="category"
+            type="text"
+            name="category"
+            maxlength="50"
+            placeholder="e.g. Food, Travel, Shopping"
+            required
+        >
+
+        <label for="amount">Monthly Budget (₹)</label>
+        <input
+            id="amount"
+            type="number"
+            name="amount"
+            min="0.01"
+            max="1000000000"
+            step="0.01"
+            placeholder="e.g. 3000"
+            required
+        >
+
+        <button type="submit">Save Budget</button>
+        <p class="budget-hint">
+            Saving the same category again will update its budget.
+        </p>
+    </form>
+</div>
+
+<div class="budget-list-heading">
+    <h2>Your Budgets</h2>
+    <span>{{ current_month }}</span>
+</div>
+
+{% if budgets %}
+
+<div class="budget-grid">
+    {% for budget in budgets %}
+
+    <div class="panel budget-card">
+        <div class="budget-card-header">
+            <h3>{{ budget.category }}</h3>
+
+            {% if budget.status == "over" %}
+                <span class="budget-badge over">Over Budget</span>
+            {% elif budget.status == "warning" %}
+                <span class="budget-badge warning">Near Limit</span>
+            {% else %}
+                <span class="budget-badge safe">On Track</span>
+            {% endif %}
+        </div>
+
+        <p class="budget-spent">
+            ₹{{ "%.2f"|format(budget.spent) }}
+            <span>spent</span>
+        </p>
+
+        <p class="budget-limit">
+            of ₹{{ "%.2f"|format(budget.amount) }}
+        </p>
+
+        <div class="budget-progress">
+            <div
+                class="budget-progress-fill {{ budget.status }}"
+                style="width: {{ budget.bar_percent }}%;"
+            ></div>
+        </div>
+
+        <div class="budget-progress-labels">
+            <span>{{ budget.percent }}% used</span>
+            {% if budget.remaining >= 0 %}
+                <span>₹{{ "%.2f"|format(budget.remaining) }} left</span>
+            {% else %}
+                <span>
+                    ₹{{ "%.2f"|format(-budget.remaining) }} over
+                </span>
+            {% endif %}
+        </div>
+
+        {% if budget.status == "over" %}
+            <p class="budget-message over-text">
+                You have exceeded this category's budget.
+            </p>
+        {% elif budget.status == "warning" %}
+            <p class="budget-message warning-text">
+                Caution: you have used at least 80% of this budget.
+            </p>
+        {% endif %}
+    </div>
+
+    {% endfor %}
+</div>
+
+{% else %}
+
+<div class="panel budget-empty">
+    <h3>No budgets yet</h3>
+    <p>
+        Create your first category budget above.
+        For example, set Food to ₹3,000 per month.
+    </p>
+</div>
+
+{% endif %}
+
+{% endblock %}

@@ -1,0 +1,90 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="theme-color" content="#0b1020">
+    <title>{% block title %}Student Finance{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body class="app-layout">
+
+    <aside class="sidebar">
+        <a href="{{ url_for('index') }}" class="brand">
+            <span class="brand-icon">S</span>
+            <span>Student Finance</span>
+        </a>
+
+        <p class="sidebar-label">MENU</p>
+
+        <nav class="sidebar-nav">
+            <a href="{{ url_for('index') }}"
+               class="{% if request.endpoint == 'index' %}active{% endif %}">
+                <span>▦</span> Dashboard
+            </a>
+
+            <a href="{{ url_for('home') }}"
+               class="{% if request.endpoint == 'home' %}active{% endif %}">
+                <span>⌂</span> Home
+            </a>
+
+            <a href="{{ url_for('expenses_page') }}"
+               class="{% if request.endpoint == 'expenses_page' %}active{% endif %}">
+                <span>▤</span> Expenses
+            </a>
+
+            <a href="{{ url_for('wallet_page') }}"
+               class="{% if request.endpoint == 'wallet_page' %}active{% endif %}">
+                <span>◈</span> Wallet
+            </a>
+            <a href="{{ url_for('budget_page') }}"
+   class="{% if request.endpoint == 'budget_page' %}active{% endif %}">
+    <span>Monthly Budget</span>
+</a>
+
+            <a href="{{ url_for('profile') }}"
+               class="{% if request.endpoint == 'profile' %}active{% endif %}">
+                <span>◎</span> Profile
+            </a>
+        </nav>
+
+        <div class="sidebar-bottom">
+            <div class="user-chip">
+                <span class="avatar">{{ session.get('username', 'S')[:1]|upper }}</span>
+                <span class="user-name">{{ session.get('username', 'Student') }}</span>
+            </div>
+
+            <form method="POST" action="{{ url_for('logout') }}">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <button type="submit" class="sidebar-logout">↪ Logout</button>
+            </form>
+        </div>
+    </aside>
+
+    <main class="main-content">
+        <header class="topbar">
+            <div>
+                <p class="eyebrow">STUDENT FINANCE MANAGER</p>
+                <h1>{% block heading %}Dashboard{% endblock %}</h1>
+            </div>
+            <span class="topbar-status">● Account active</span>
+        </header>
+
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="notice">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        {% block content %}{% endblock %}
+
+        <footer class="footer">
+            <p>Made for students 💙</p>
+            <span>One small saving at a time.</span>
+        </footer>
+    </main>
+</body>
+</html>

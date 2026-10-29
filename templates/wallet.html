@@ -1,0 +1,91 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}Wallet | Student Finance{% endblock %}
+{% block heading %}My Wallet{% endblock %}
+
+{% block content %}
+<section class="panel wallet-panel">
+    <div class="wallet-heading">
+        <div>
+            <p class="eyebrow">YOUR SAVINGS SPACE</p>
+            <h2>💰 Demo Wallet</h2>
+            <p class="muted">Track your savings and withdrawals.</p>
+        </div>
+        <div class="balance-box">
+            <span>Recorded Balance</span>
+            <h2>₹{{ "%.2f"|format(wallet_balance) }}</h2>
+        </div>
+    </div>
+
+    <div class="wallet-notice">
+        <strong>Demo only</strong>
+        <span>These records do not send or receive actual bank or UPI payments.</span>
+    </div>
+
+    <form action="{{ url_for('wallet_action') }}" method="POST" class="wallet-form">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+
+        <label>Transaction
+            <select name="type" required>
+                <option value="Deposit">Record a deposit (+)</option>
+                <option value="Withdraw">Record a withdrawal (-)</option>
+            </select>
+        </label>
+
+        <label>Amount (₹)
+            <input type="number" name="amount" min="0.01"
+                   max="10000000" step="0.01" required>
+        </label>
+
+        <label>Note
+            <input type="text" name="note" maxlength="100"
+                   placeholder="e.g. Monthly savings">
+        </label>
+
+        <div class="form-action">
+            <button type="submit">Save Demo Transaction</button>
+        </div>
+    </form>
+</section>
+
+<section class="panel">
+    <div class="panel-heading">
+        <div>
+            <p class="eyebrow">TRANSACTION RECORDS</p>
+            <h2>Wallet History</h2>
+        </div>
+    </div>
+
+    {% if transactions %}
+    <div class="table-wrap">
+        <table>
+            <thead>
+                <tr><th>Date</th><th>Type</th><th>Note</th><th>Amount</th></tr>
+            </thead>
+            <tbody>
+                {% for transaction in transactions %}
+                <tr>
+                    <td>{{ transaction.date }}</td>
+                    <td>
+                        {% if transaction.type == "Deposit" %}
+                            <span class="deposit-tag">Deposit</span>
+                        {% else %}
+                            <span class="withdraw-tag">Withdraw</span>
+                        {% endif %}
+                    </td>
+                    <td>{{ transaction.note }}</td>
+                    <td class="amount">
+                        {% if transaction.type == "Deposit" %}+{% else %}-{% endif %}₹{{ "%.2f"|format(transaction.amount|float) }}
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+    {% else %}
+    <div class="empty-state">No wallet transactions yet.</div>
+    {% endif %}
+</section>
+{% endblock %}

@@ -1,0 +1,39 @@
+
+
+{% extends "base.html" %}
+
+{% block title %}Home | Student Finance{% endblock %}
+{% block heading %}Home{% endblock %}
+
+{% block content %}
+<section class="panel home-hero">
+    <p class="eyebrow">YOUR MONEY, YOUR FUTURE</p>
+    <h2>Take control of your finances.</h2>
+    <p class="muted">
+        Record expenses, understand your spending habits, and keep track
+        of your savings in one place.
+    </p>
+    <div class="home-actions">
+        <a class="primary-link" href="{{ url_for('index') }}">Open Dashboard →</a>
+        <a class="secondary-link" href="{{ url_for('expenses_page') }}">Manage Expenses</a>
+    </div>
+</section>
+
+<section class="stats">
+    <article class="stat-card">
+        <span class="stat-icon purple">▦</span>
+        <h3>Track Expenses</h3>
+        <p class="muted">Keep your daily spending organised.</p>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon green">◈</span>
+        <h3>Manage Savings</h3>
+        <p class="muted">View your virtual wallet records.</p>
+    </article>
+    <article class="stat-card">
+        <span class="stat-icon blue">◎</span>
+        <h3>Private Account</h3>
+        <p class="muted">Your records are linked to your account.</p>
+    </article>
+</section>
+{% endblock %}

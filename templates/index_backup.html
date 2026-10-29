@@ -1,0 +1,219 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Student Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <header class="header">
+        <div>
+            <p class="eyebrow">YOUR MONEY, YOUR FUTURE</p>
+            <h1>Student Expense Tracker</h1>
+            <p>Track your spending. Build better saving habits.</p>
+        </div>
+        <div class="wallet-badge">🎓 Student Dashboard</div>
+    </header>
+
+    <main class="container">
+        {% with messages = get_flashed_messages() %}
+            {% if messages %}
+                {% for message in messages %}
+                    <div class="notice">{{ message }}</div>
+                {% endfor %}
+            {% endif %}
+        {% endwith %}
+
+        <section class="stats">
+            <article class="stat-card">
+                <p>Total Expenses</p>
+                <h2>₹{{ "%.2f"|format(total) }}</h2>
+                <span>All recorded expenses</span>
+            </article>
+            <article class="stat-card">
+                <p>This Month</p>
+                <h2>₹{{ "%.2f"|format(monthly_total) }}</h2>
+                <span>Your current month's spending</span>
+            </article>
+            <article class="stat-card">
+                <p>Expense Records</p>
+                <h2>{{ expenses|length }}</h2>
+                <span>Entries saved so far</span>
+            </article>
+        </section>
+
+        <section class="panel">
+            <h2>➕ Add an Expense</h2>
+            <form action="{{ url_for('add_expense') }}" method="POST" class="expense-form">
+                <label>
+                    Expense name
+                    <input type="text" name="title" placeholder="e.g. College lunch" required>
+                </label>
+
+                <label>
+                    Category
+                    <select name="category" required>
+                        <option value="">Choose category</option>
+                        <option>Food</option>
+                        <option>Travel</option>
+                        <option>Education</option>
+                        <option>Shopping</option>
+                        <option>Bills</option>
+                        <option>Other</option>
+                    </select>
+                </label>
+
+                <label>
+                    Amount (₹)
+                    <input type="number" name="amount" min="0.01" step="0.01" placeholder="150" required>
+                </label>
+
+                <label>
+                    Date
+                    <input type="date" name="date" value="{{ __import__ if false else '' }}" required>
+                </label>
+
+                <button type="submit">Add Expense</button>
+            </form>
+        </section>
+
+        <section class="panel">
+            <h2>📊 Spending by Category</h2>
+            {% if categories %}
+                <div class="category-list">
+                    {% for category, amount in categories.items() %}
+                        <div class="category-row">
+                            <span>{{ category }}</span>
+                            <strong>₹{{ "%.2f"|format(amount) }}</strong>
+                        </div>
+                    {% endfor %}
+                </div>
+            {% else %}
+                <p class="empty">Your category totals will appear here after you add expenses.</p>
+            {% endif %}
+        </section>
+
+        <section class="panel">
+            <h2>🧾 Recent Expenses</h2>
+            {% if expenses %}
+                <div class="table-wrap">
+                    <table>
+                        <thead>
+                            <tr>
+                                <th>Date</th>
+                                <th>Expense</th>
+                                <th>Category</th>
+                                <th>Amount</th>
+                                <th>Action</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for expense in expenses|reverse %}
+                                <tr>
+                                    <td>{{ expense.date }}</td>
+                                    <td>{{ expense.title }}</td>
+                                    <td><span class="category-tag">{{ expense.category }}</span></td>
+                                    <td class="amount">₹{{ "%.2f"|format(expense.amount|float) }}</td>
+                                    <td>
+                                        <form action="{{ url_for('delete_expense', expense_id=expense.id|int) }}" method="POST">
+                                            <button class="delete-button" type="submit">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            {% else %}
+                <p class="empty">No expenses yet. Add your first expense above!</p>
+            {% endif %}
+        </section>
+
+        <p class="footer">Made for students 💙 One small saving at a time.</p>
+        
+<section class="panel wallet-panel">
+    <div class="wallet-heading">
+        <div>
+            <p class="wallet-label">STUDENT SAVINGS</p>
+            <h2>💰 My Savings Wallet</h2>
+            <p>Small savings today, bigger goals tomorrow.</p>
+        </div>
+        <div class="balance-box">
+            <span>Available Balance</span>
+            <h2>₹{{ "%.2f"|format(wallet_balance) }}</h2>
+        </div>
+    </div>
+
+    <form action="{{ url_for('wallet_action') }}"
+          method="POST" class="wallet-form">
+
+        <label>
+            Transaction
+            <select name="type" required>
+                <option value="Deposit">Deposit money (+)</option>
+                <option value="Withdraw">Withdraw money (-)</option>
+            </select>
+        </label>
+
+        <label>
+            Amount (₹)
+            <input type="number" name="amount"
+                   min="0.01" step="0.01"
+                   placeholder="e.g. 200" required>
+        </label>
+
+        <label>
+            Note
+            <input type="text" name="note"
+                   maxlength="100"
+                   placeholder="e.g. Pocket money savings">
+        </label>
+
+        <button type="submit">Save Transaction</button>
+    </form>
+
+    <h3 class="history-title">Wallet Transaction History</h3>
+
+    {% if transactions %}
+        <div class="table-wrap">
+            <table>
+                <thead>
+                    <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Note</th>
+                        <th>Amount</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for transaction in transactions|reverse %}
+                        <tr>
+                            <td>{{ transaction.date }}</td>
+                            <td>
+                                {% if transaction.type == "Deposit" %}
+                                    <span class="deposit-tag">Deposit</span>
+                                {% else %}
+                                    <span class="withdraw-tag">Withdraw</span>
+                                {% endif %}
+                            </td>
+                            <td>{{ transaction.note }}</td>
+                            <td class="amount">
+                                {% if transaction.type == "Deposit" %}+{% else %}-{% endif %}₹{{ "%.2f"|format(transaction.amount|float) }}
+                            </td>
+                        </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    {% else %}
+        <p class="empty">
+            No wallet transactions yet. Add your first deposit above!
+        </p>
+    {% endif %}
+</section>
+
+    </main>
+</body>
+</html>

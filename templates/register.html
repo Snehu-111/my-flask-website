@@ -1,0 +1,35 @@
+
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Register | Student Expense Tracker</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+</head>
+<body>
+    <main class="container">
+        <section class="card">
+            <h1>Create your account</h1>
+            <p>Your expenses will be private to your account.</p>
+
+            {% for message in get_flashed_messages() %}
+                <p>{{ message }}</p>
+            {% endfor %}
+
+            <form method="POST">
+                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                <label>Username</label>
+                <input type="text" name="username" required minlength="3" maxlength="40" autocomplete="username">
+
+                <label>Password (minimum 8 characters)</label>
+                <input type="password" name="password" required minlength="8" autocomplete="new-password">
+
+                <button type="submit">Create account</button>
+            </form>
+
+            <p>Already registered? <a href="{{ url_for('login') }}">Login</a></p>
+        </section>
+    </main>
+</body>
+</html>

@@ -1,0 +1,29 @@
+
+{% extends "base.html" %}
+
+{% block title %}Profile | Student Finance{% endblock %}
+{% block heading %}My Profile{% endblock %}
+
+{% block content %}
+<section class="panel profile-card">
+    <div class="profile-avatar">
+        {{ username[:1]|upper }}
+    </div>
+    <p class="eyebrow">ACCOUNT DETAILS</p>
+    <h2>{{ username }}</h2>
+    <p class="muted">Student Expense Tracker member</p>
+
+    <div class="profile-detail">
+        <span>Username</span>
+        <strong>{{ username }}</strong>
+    </div>
+    <div class="profile-detail">
+        <span>Account status</span>
+        <strong class="status-text">Logged in</strong>
+    </div>
+
+    <p class="muted">
+        Your expenses and wallet records are stored against your account.
+    </p>
+</section>
+{% endblock %}
