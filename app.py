@@ -737,12 +737,17 @@ def budget_page():
     )
 
 
-   init_db()
+
 # --------------------------------------------------
 # START APPLICATION
 # IMPORTANT: Keep this block at the very bottom.
 # --------------------------------------------------
+# --------------------------------------------------
+# START APPLICATION
+# --------------------------------------------------
+
+# Initialize database for Render and local use
+init_db()
 
 if __name__ == "__main__":
-    init_db()
     app.run(debug=True)
