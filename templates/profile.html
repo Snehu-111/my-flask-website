@@ -1,29 +1,47 @@
-
 {% extends "base.html" %}
 
 {% block title %}Profile | Student Finance{% endblock %}
 {% block heading %}My Profile{% endblock %}
 
 {% block content %}
-<section class="panel profile-card">
-    <div class="profile-avatar">
-        {{ username[:1]|upper }}
-    </div>
-    <p class="eyebrow">ACCOUNT DETAILS</p>
-    <h2>{{ username }}</h2>
-    <p class="muted">Student Expense Tracker member</p>
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 800px;">
+    
+    <!-- Profile Card -->
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+        
+        <!-- Profile Picture / Avatar -->
+        <div>
+            {% if user.profile_pic %}
+                <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" alt="Profile Picture" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+            {% else %}
+                <div style="width: 90px; height: 90px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold;">
+                    {{ user.username[0]|upper }}
+                </div>
+            {% endif %}
+        </div>
 
-    <div class="profile-detail">
-        <span>Username</span>
-        <strong>{{ username }}</strong>
-    </div>
-    <div class="profile-detail">
-        <span>Account status</span>
-        <strong class="status-text">Logged in</strong>
+        <!-- User Info -->
+        <div style="flex-grow: 1;">
+            <p class="eyebrow" style="margin-bottom: 4px;">ACCOUNT DETAILS</p>
+            <h2 style="margin: 0 0 6px 0; color: #fff; font-size: 24px;">{{ user.username }}</h2>
+            <p style="color: var(--text-muted); margin: 0; font-size: 14px;">Student Expense Tracker member</p>
+            <p style="color: var(--text-muted); margin: 6px 0 0 0; font-size: 13px;">Account status: <strong style="color: var(--success);">Logged in</strong></p>
+        </div>
+
     </div>
 
-    <p class="muted">
-        Your expenses and wallet records are stored against your account.
-    </p>
-</section>
+    <!-- Upload Picture Panel -->
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px;">
+        <h3 style="margin-top: 0; color: #fff; font-size: 18px; margin-bottom: 16px;">📸 Update Profile Picture</h3>
+        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 16px;">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div>
+                <label style="color: var(--text-muted); font-size: 14px; display: block; margin-bottom: 6px;">Select image file</label>
+                <input type="file" name="profile_pic" accept="image/*" required style="padding: 10px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; width: 100%;">
+            </div>
+            <button type="submit" style="background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; align-self: flex-start;">Upload Picture</button>
+        </form>
+    </div>
+
+</div>
 {% endblock %}

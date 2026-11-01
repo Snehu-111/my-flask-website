@@ -1,752 +1,403 @@
-
 import os
-import csv
-import math
-import hmac
-import secrets
 import sqlite3
+import math
+from datetime import date
+from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from functools import wraps
-from datetime import date, datetime
-
-from flask import (
-    Flask,
-    render_template,
-    request,
-    redirect,
-    url_for,
-    flash,
-    session,
-    abort,
-)
-from werkzeug.security import generate_password_hash, check_password_hash
-
-
-# --------------------------------------------------
-# APP CONFIGURATION
-# --------------------------------------------------
+import csv
+import io
 
 app = Flask(__name__)
+app.secret_key = "student_finance_secret_key"
 
-app.secret_key = os.environ.get(
-    "FLASK_SECRET_KEY",
-    "CHANGE-THIS-TO-A-LONG-RANDOM-SECRET-BEFORE-DEPLOYING",
-)
-
-BASE_DIR = os.path.dirname(os.path.abspath(__file__))
-DB_FILE = os.path.join(BASE_DIR, "expenses.db")
-CSV_FILE = os.path.join(BASE_DIR, "expenses.csv")
-WALLET_FILE = os.path.join(BASE_DIR, "wallet.csv")
-
-
-# --------------------------------------------------
-# DATABASE
-# --------------------------------------------------
+BASE_DIR = os.path.abspath(os.path.dirname(__file__))
+DB_PATH = os.path.join(BASE_DIR, "finance.db")
 
 def connect_db():
-    db = sqlite3.connect(DB_FILE)
-    db.row_factory = sqlite3.Row
-    db.execute("PRAGMA foreign_keys = ON")
-    return db
-
+    conn = sqlite3.connect(DB_PATH)
+    conn.row_factory = sqlite3.Row
+    return conn
 
 def init_db():
     with connect_db() as db:
-        db.executescript("""
+        db.execute("""
             CREATE TABLE IF NOT EXISTS users (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                username TEXT NOT NULL COLLATE NOCASE UNIQUE,
-                password_hash TEXT NOT NULL,
-                created_at TEXT NOT NULL
-            );
-
+                username TEXT UNIQUE NOT NULL,
+                password TEXT NOT NULL,
+                profile_pic TEXT
+            )
+        """)
+        db.execute("""
             CREATE TABLE IF NOT EXISTS expenses (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                date TEXT NOT NULL,
-                title TEXT NOT NULL,
-                category TEXT NOT NULL,
-                amount REAL NOT NULL CHECK(amount > 0),
-                FOREIGN KEY(user_id) REFERENCES users(id)
-                    ON DELETE CASCADE
-            );
-
-            CREATE TABLE IF NOT EXISTS wallet_transactions (
+                user_id INTEGER,
+                title TEXT,
+                category TEXT,
+                amount REAL,
+                date TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS wallet (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                date TEXT NOT NULL,
-                type TEXT NOT NULL
-                    CHECK(type IN ('Deposit', 'Withdraw')),
-                note TEXT NOT NULL,
-                amount REAL NOT NULL CHECK(amount > 0),
-                FOREIGN KEY(user_id) REFERENCES users(id)
-                    ON DELETE CASCADE
-            );
-
+                user_id INTEGER,
+                type TEXT,
+                amount REAL,
+                note TEXT,
+                date TEXT
+            )
+        """)
+        db.execute("""
             CREATE TABLE IF NOT EXISTS budgets (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                user_id INTEGER NOT NULL,
-                category TEXT NOT NULL,
-                month TEXT NOT NULL,
-                amount REAL NOT NULL CHECK(amount > 0),
-                UNIQUE(user_id, category, month),
-                FOREIGN KEY(user_id) REFERENCES users(id)
-                    ON DELETE CASCADE
-            );
+                user_id INTEGER,
+                category TEXT,
+                amount REAL,
+                month TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS savings_goals (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                goal_name TEXT,
+                target_amount REAL,
+                saved_amount REAL
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS recurring (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                title TEXT,
+                amount REAL,
+                frequency TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS split_bills (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                title TEXT,
+                total_amount REAL,
+                shares TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS debts (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                friend_name TEXT,
+                amount REAL,
+                type TEXT,
+                note TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS categories (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                name TEXT
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS emergency_fund (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                target_amount REAL,
+                current_amount REAL
+            )
+        """)
+        db.execute("""
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                user_id INTEGER,
+                service_name TEXT,
+                amount REAL,
+                renewal_date TEXT
+            )
         """)
 
-
-# --------------------------------------------------
-# IMPORT OLD CSV DATA FOR FIRST ACCOUNT
-# --------------------------------------------------
-
-def import_old_csv_data(user_id):
-    """Import old CSV records into the first account."""
-
-    with connect_db() as db:
-
-        if os.path.exists(CSV_FILE):
-            with open(
-                CSV_FILE, newline="", encoding="utf-8"
-            ) as file:
-                for item in csv.DictReader(file):
-                    try:
-                        amount = float(item["amount"])
-                        expense_date = date.fromisoformat(
-                            item["date"]
-                        )
-                        title = item["title"].strip()
-                        category = item["category"].strip()
-
-                        if (
-                            not math.isfinite(amount)
-                            or amount <= 0
-                            or not title
-                            or not category
-                        ):
-                            continue
-
-                        db.execute("""
-                            INSERT INTO expenses
-                            (user_id, date, title, category, amount)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (
-                            user_id,
-                            expense_date.isoformat(),
-                            title,
-                            category,
-                            amount,
-                        ))
-
-                    except (ValueError, KeyError, TypeError):
-                        continue
-
-        if os.path.exists(WALLET_FILE):
-            with open(
-                WALLET_FILE, newline="", encoding="utf-8"
-            ) as file:
-                for item in csv.DictReader(file):
-                    try:
-                        amount = float(item["amount"])
-                        transaction_type = item["type"]
-                        transaction_date = item["date"]
-                        note = item.get("note", "")
-
-                        if (
-                            not math.isfinite(amount)
-                            or amount <= 0
-                            or transaction_type
-                            not in ("Deposit", "Withdraw")
-                        ):
-                            continue
-
-                        db.execute("""
-                            INSERT INTO wallet_transactions
-                            (user_id, date, type, note, amount)
-                            VALUES (?, ?, ?, ?, ?)
-                        """, (
-                            user_id,
-                            transaction_date,
-                            transaction_type,
-                            note,
-                            amount,
-                        ))
-
-                    except (ValueError, KeyError, TypeError):
-                        continue
-
-
-# --------------------------------------------------
-# CSRF PROTECTION
-# --------------------------------------------------
-
-@app.before_request
-def security_checks():
-    if request.method == "POST":
-        sent_token = request.form.get("csrf_token", "")
-        saved_token = session.get("csrf_token", "")
-
-        if (
-            not saved_token
-            or not hmac.compare_digest(sent_token, saved_token)
-        ):
-            abort(
-                400,
-                description=(
-                    "Invalid form token. Refresh the page and try again."
-                ),
-            )
-
-
-@app.context_processor
-def template_helpers():
-    if "csrf_token" not in session:
-        session["csrf_token"] = secrets.token_urlsafe(32)
-
-    return {"csrf_token": session["csrf_token"]}
-
-
-# --------------------------------------------------
-# LOGIN REQUIRED DECORATOR
-# --------------------------------------------------
-
-def login_required(view):
-    @wraps(view)
+def login_required(f):
+    @wraps(f)
     def wrapped(*args, **kwargs):
-        if not session.get("user_id"):
-            flash("Please log in to continue.")
-            return redirect(url_for("login"))
-
-        return view(*args, **kwargs)
-
+        if "user_id" not in session:
+            with connect_db() as db:
+                user = db.execute("SELECT * FROM users WHERE username = 'sarthak'").fetchone()
+                if not user:
+                    db.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("sarthak", "password"))
+                    user = db.execute("SELECT * FROM users WHERE username = 'sarthak'").fetchone()
+                session["user_id"] = user["id"]
+                session["username"] = user["username"]
+        return f(*args, **kwargs)
     return wrapped
-
-
-# --------------------------------------------------
-# REGISTER
-# --------------------------------------------------
-
-@app.route("/register", methods=["GET", "POST"])
-def register():
-    if session.get("user_id"):
-        return redirect(url_for("index"))
-
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-
-        if len(username) < 3 or len(username) > 40:
-            flash("Username must be between 3 and 40 characters.")
-            return redirect(url_for("register"))
-
-        if len(password) < 8:
-            flash("Password must contain at least 8 characters.")
-            return redirect(url_for("register"))
-
-        with connect_db() as db:
-            first_user = (
-                db.execute(
-                    "SELECT COUNT(*) FROM users"
-                ).fetchone()[0] == 0
-            )
-
-            try:
-                cursor = db.execute("""
-                    INSERT INTO users
-                    (username, password_hash, created_at)
-                    VALUES (?, ?, ?)
-                """, (
-                    username,
-                    generate_password_hash(password),
-                    datetime.now().isoformat(timespec="seconds"),
-                ))
-
-                user_id = cursor.lastrowid
-
-            except sqlite3.IntegrityError:
-                flash("That username is already taken.")
-                return redirect(url_for("register"))
-
-        if first_user:
-            import_old_csv_data(user_id)
-
-        session.clear()
-        session["user_id"] = user_id
-        session["username"] = username
-        session["csrf_token"] = secrets.token_urlsafe(32)
-
-        flash("Account created successfully!")
-        return redirect(url_for("index"))
-
-    return render_template("register.html")
-
-
-# --------------------------------------------------
-# LOGIN
-# --------------------------------------------------
-
-@app.route("/login", methods=["GET", "POST"])
-def login():
-    if session.get("user_id"):
-        return redirect(url_for("index"))
-
-    if request.method == "POST":
-        username = request.form.get("username", "").strip()
-        password = request.form.get("password", "")
-
-        with connect_db() as db:
-            user = db.execute(
-                "SELECT * FROM users WHERE username = ?",
-                (username,),
-            ).fetchone()
-
-        if user and check_password_hash(
-            user["password_hash"], password
-        ):
-            session.clear()
-            session["user_id"] = user["id"]
-            session["username"] = user["username"]
-            session["csrf_token"] = secrets.token_urlsafe(32)
-
-            flash("Welcome back!")
-            return redirect(url_for("index"))
-
-        flash("Invalid username or password.")
-        return redirect(url_for("login"))
-
-    return render_template("login.html")
-
-
-# --------------------------------------------------
-# LOGOUT
-# --------------------------------------------------
-
-@app.route("/logout", methods=["POST"])
-@login_required
-def logout():
-    session.clear()
-    flash("You have logged out.")
-    return redirect(url_for("login"))
-
-
-# --------------------------------------------------
-# DATABASE HELPERS
-# --------------------------------------------------
-
-def get_expenses(user_id):
-    with connect_db() as db:
-        rows = db.execute("""
-            SELECT * FROM expenses
-            WHERE user_id = ?
-            ORDER BY date DESC, id DESC
-        """, (user_id,)).fetchall()
-
-    return [dict(row) for row in rows]
-
-
-def get_transactions(user_id):
-    with connect_db() as db:
-        rows = db.execute("""
-            SELECT * FROM wallet_transactions
-            WHERE user_id = ?
-            ORDER BY id DESC
-        """, (user_id,)).fetchall()
-
-    return [dict(row) for row in rows]
-
-
-def calculate_wallet_balance(transactions):
-    balance = 0.0
-
-    for transaction in transactions:
-        amount = float(transaction["amount"])
-
-        if transaction["type"] == "Deposit":
-            balance += amount
-        elif transaction["type"] == "Withdraw":
-            balance -= amount
-
-    return balance
-
-
-# --------------------------------------------------
-# DASHBOARD - FIRST PAGE AFTER LOGIN
-# --------------------------------------------------
-
 
 @app.route("/")
 @login_required
 def index():
     user_id = session["user_id"]
+    with connect_db() as db:
+        expenses = db.execute("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC", (user_id,)).fetchall()
+        wallet_txs = db.execute("SELECT * FROM wallet WHERE user_id = ?", (user_id,)).fetchall()
 
-    expenses = get_expenses(user_id)
-    transactions = get_transactions(user_id)
-    today = date.today()
+    total = sum(e["amount"] for e in expenses)
+    monthly_total = sum(e["amount"] for e in expenses if e["date"] and e["date"].startswith(date.today().isoformat()[:7]))
+    average_monthly = total / 6 if total > 0 else 0
 
-    # Overall expenses
-    total = sum(float(e["amount"]) for e in expenses)
+    wallet_balance = 0
+    for w in wallet_txs:
+        if "Deposit" in w["type"] or "Add" in w["type"]:
+            wallet_balance += w["amount"]
+        else:
+            wallet_balance -= w["amount"]
 
-    # Current month expenses
-    current_month = today.strftime("%Y-%m")
-
-    monthly_total = sum(
-        float(e["amount"])
-        for e in expenses
-        if e["date"][:7] == current_month
-    )
-
-    # Category-wise expenses
     categories = {}
+    for e in expenses:
+        cat = e["category"] or "Other"
+        categories[cat] = categories.get(cat, 0) + e["amount"]
 
-    for expense in expenses:
-        category = expense["category"]
-        categories[category] = (
-            categories.get(category, 0)
-            + float(expense["amount"])
-        )
-
-    # Last 6 months chart data
-    monthly_labels = []
-    monthly_values = []
-
-    for offset in range(5, -1, -1):
-        month_index = today.year * 12 + today.month - 1 - offset
-        year = month_index // 12
-        month = month_index % 12 + 1
-
-        month_date = date(year, month, 1)
-        month_key = month_date.strftime("%Y-%m")
-
-        monthly_labels.append(month_date.strftime("%b %Y"))
-
-        month_sum = sum(
-            float(e["amount"])
-            for e in expenses
-            if e["date"][:7] == month_key
-        )
-
-        monthly_values.append(round(month_sum, 2))
-
-    # Average monthly spending over the displayed 6 months
-    average_monthly = round(sum(monthly_values) / 6, 2)
-
-    # Wallet balance
-    wallet_balance = calculate_wallet_balance(transactions)
-
-    return render_template(
-        "dashboard.html",
-        expenses=expenses,
-        total=total,
-        monthly_total=monthly_total,
-        categories=categories,
-        today=today.isoformat(),
-        wallet_balance=wallet_balance,
-        transactions=transactions,
-        monthly_labels=monthly_labels,
-        monthly_values=monthly_values,
-        average_monthly=average_monthly,
-        category_labels=list(categories.keys()),
-        category_values=[
-            round(value, 2) for value in categories.values()
-        ],
-    )
-
-
-# --------------------------------------------------
-# HOME PAGE
-# --------------------------------------------------
+    return render_template("dashboard.html", total=total, monthly_total=monthly_total, average_monthly=average_monthly, wallet_balance=wallet_balance, categories=categories, recent_expenses=expenses[:5])
 
 @app.route("/home")
 @login_required
 def home():
     return render_template("home.html")
 
-
-# --------------------------------------------------
-# EXPENSES PAGE
-# --------------------------------------------------
-
-@app.route("/expenses")
+@app.route("/expenses", methods=["GET"])
 @login_required
 def expenses_page():
-    expenses = get_expenses(session["user_id"])
+    user_id = session["user_id"]
+    with connect_db() as db:
+        expenses = db.execute("SELECT * FROM expenses WHERE user_id = ? ORDER BY date DESC", (user_id,)).fetchall()
+    return render_template("expenses.html", expenses=expenses)
 
-    return render_template(
-        "expenses.html",
-        expenses=expenses,
-    )
-
-
-# --------------------------------------------------
-# ADD EXPENSE
-# --------------------------------------------------
-
-@app.route("/add", methods=["POST"])
+@app.route("/add_expense", methods=["POST"])
 @login_required
 def add_expense():
-    title = request.form.get("title", "").strip()
-    category = request.form.get("category", "").strip()
-    expense_date = request.form.get("date", "")
-    amount_text = request.form.get("amount", "")
+    user_id = session["user_id"]
+    title = request.form.get("title")
+    category = request.form.get("category")
+    amount = request.form.get("amount")
+    exp_date = request.form.get("date")
 
     try:
-        amount = float(amount_text)
-
-        if not math.isfinite(amount) or amount <= 0:
-            raise ValueError
-
-        parsed_date = date.fromisoformat(expense_date)
-
+        amt = float(amount)
     except (ValueError, TypeError):
-        flash("Enter a valid date and an amount greater than zero.")
-        return redirect(url_for("expenses_page"))
-
-    if not title or not category:
-        flash("Enter an expense name and choose a category.")
+        flash("Invalid amount.")
         return redirect(url_for("expenses_page"))
 
     with connect_db() as db:
-        db.execute("""
-            INSERT INTO expenses
-            (user_id, date, title, category, amount)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            session["user_id"],
-            parsed_date.isoformat(),
-            title,
-            category,
-            amount,
-        ))
+        db.execute("INSERT INTO expenses (user_id, title, category, amount, date) VALUES (?, ?, ?, ?, ?)", (user_id, title, category, amt, exp_date))
 
     flash("Expense added successfully!")
     return redirect(url_for("expenses_page"))
 
-
-# --------------------------------------------------
-# DELETE EXPENSE
-# --------------------------------------------------
-
-@app.route("/delete/<int:expense_id>", methods=["POST"])
+@app.route("/delete_expense/<int:expense_id>", methods=["POST"])
 @login_required
 def delete_expense(expense_id):
+    user_id = session["user_id"]
     with connect_db() as db:
-        cursor = db.execute("""
-            DELETE FROM expenses
-            WHERE id = ? AND user_id = ?
-        """, (
-            expense_id,
-            session["user_id"],
-        ))
-
-    if cursor.rowcount == 0:
-        flash("Expense not found.")
-    else:
-        flash("Expense deleted.")
-
+        db.execute("DELETE FROM expenses WHERE id = ? AND user_id = ?", (expense_id, user_id))
+    flash("Expense deleted.")
     return redirect(url_for("expenses_page"))
 
+@app.route("/export_expenses")
+@login_required
+def export_expenses():
+    user_id = session["user_id"]
+    with connect_db() as db:
+        expenses = db.execute("SELECT date, title, category, amount FROM expenses WHERE user_id = ?", (user_id,)).fetchall()
 
-# --------------------------------------------------
-# WALLET PAGE
-# --------------------------------------------------
+    si = io.StringIO()
+    cw = csv.writer(si)
+    cw.writerow(["Date", "Title", "Category", "Amount"])
+    for e in expenses:
+        cw.writerow([e["date"], e["title"], e["category"], e["amount"]])
 
-@app.route("/wallet-page")
+    output = io.BytesIO()
+    output.write(si.getvalue().encode("utf-8"))
+    output.seek(0)
+    return send_file(output, mimetype="text/csv", as_attachment=True, download_name="expenses.csv")
+
+@app.route("/wallet", methods=["GET", "POST"])
 @login_required
 def wallet_page():
-    transactions = get_transactions(session["user_id"])
-    balance = calculate_wallet_balance(transactions)
-
-    return render_template(
-        "wallet.html",
-        transactions=transactions,
-        wallet_balance=balance,
-    )
-
-
-# --------------------------------------------------
-# WALLET DEPOSIT / WITHDRAW ACTION
-# --------------------------------------------------
-
-@app.route("/wallet", methods=["POST"])
-@login_required
-def wallet_action():
-    transaction_type = request.form.get("type", "")
-    note = request.form.get("note", "").strip()
-    amount_text = request.form.get("amount", "")
-
-    if transaction_type not in ("Deposit", "Withdraw"):
-        flash("Choose Deposit or Withdraw.")
-        return redirect(url_for("wallet_page"))
-
-    try:
-        amount = float(amount_text)
-
-        if not math.isfinite(amount) or amount <= 0:
-            raise ValueError
-
-    except (ValueError, TypeError):
-        flash("Enter a valid wallet amount greater than zero.")
-        return redirect(url_for("wallet_page"))
-
     user_id = session["user_id"]
+    if request.method == "POST":
+        tx_type = request.form.get("type")
+        amount = float(request.form.get("amount", 0))
+        note = request.form.get("note", "")
+        today = date.today().isoformat()
+
+        with connect_db() as db:
+            db.execute("INSERT INTO wallet (user_id, type, amount, note, date) VALUES (?, ?, ?, ?, ?)", (user_id, tx_type, amount, note, today))
+        flash("Wallet transaction recorded!")
+        return redirect(url_for("wallet_page"))
 
     with connect_db() as db:
-        rows = db.execute("""
-            SELECT type, amount
-            FROM wallet_transactions
-            WHERE user_id = ?
-        """, (user_id,)).fetchall()
+        txs = db.execute("SELECT * FROM wallet WHERE user_id = ? ORDER BY id DESC", (user_id,)).fetchall()
 
-        balance = calculate_wallet_balance(
-            [dict(row) for row in rows]
-        )
-
-        if transaction_type == "Withdraw" and amount > balance:
-            flash("Insufficient demo wallet balance.")
-            return redirect(url_for("wallet_page"))
-
-        db.execute("""
-            INSERT INTO wallet_transactions
-            (user_id, date, type, note, amount)
-            VALUES (?, ?, ?, ?, ?)
-        """, (
-            user_id,
-            datetime.now().strftime("%Y-%m-%d %H:%M"),
-            transaction_type,
-            note or (
-                "Demo deposit"
-                if transaction_type == "Deposit"
-                else "Demo withdrawal"
-            ),
-            amount,
-        ))
-
-    flash(
-        f"Demo {transaction_type.lower()} recorded successfully."
-    )
-    return redirect(url_for("wallet_page"))
-
-
-# --------------------------------------------------
-# PROFILE PAGE
-# --------------------------------------------------
-
-@app.route("/profile")
-@login_required
-def profile():
-    return render_template(
-        "profile.html",
-        username=session.get("username", ""),
-    )
-
-# --------------------------------------------------
-# MONTHLY BUDGET PAGE
-# --------------------------------------------------
+    balance = sum(t["amount"] if "Deposit" in t["type"] or "Add" in t["type"] else -t["amount"] for t in txs)
+    return render_template("wallet.html", transactions=txs, balance=balance, wallet_balance=balance)
 
 @app.route("/budget", methods=["GET", "POST"])
 @login_required
 def budget_page():
     user_id = session["user_id"]
-    current_month = date.today().strftime("%Y-%m")
+    current_month = date.today().isoformat()[:7]
 
     if request.method == "POST":
-        category = request.form.get("category", "").strip()
+        category = request.form.get("category")
+        amount = float(request.form.get("amount", 0))
+        with connect_db() as db:
+            db.execute("INSERT INTO budgets (user_id, category, amount, month) VALUES (?, ?, ?, ?)", (user_id, category, amount, current_month))
+        flash("Budget saved!")
+        return redirect(url_for("budget_page"))
+
+    with connect_db() as db:
+        budgets = db.execute("SELECT * FROM budgets WHERE user_id = ? AND month = ?", (user_id, current_month)).fetchall()
+    return render_template("budget.html", budgets=budgets, current_month=current_month)
+
+@app.route("/savings_goals", methods=["GET", "POST"])
+@login_required
+def savings_goals():
+    user_id = session["user_id"]
+    if request.method == "POST":
+        goal_name = request.form.get("goal_name")
+        target_amount = float(request.form.get("target_amount", 0))
+        saved_amount = float(request.form.get("saved_amount", 0) or 0)
+
+        with connect_db() as db:
+            db.execute("INSERT INTO savings_goals (user_id, goal_name, target_amount, saved_amount) VALUES (?, ?, ?, ?)", (user_id, goal_name, target_amount, saved_amount))
+        flash("Savings goal created!")
+        return redirect(url_for("savings_goals"))
+
+    with connect_db() as db:
+        goals = db.execute("SELECT * FROM savings_goals WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("savings_goals.html", goals=goals)
+
+@app.route("/update_goal/<int:goal_id>", methods=["POST"])
+@login_required
+def update_goal(goal_id):
+    user_id = session["user_id"]
+    add_amount = float(request.form.get("add_amount", 0))
+    with connect_db() as db:
+        db.execute("UPDATE savings_goals SET saved_amount = saved_amount + ? WHERE id = ? AND user_id = ?", (add_amount, goal_id, user_id))
+    flash("Goal updated successfully!")
+    return redirect(url_for("savings_goals"))
+
+@app.route("/recurring")
+@login_required
+def recurring_expenses():
+    user_id = session["user_id"]
+    with connect_db() as db:
+        items = db.execute("SELECT * FROM recurring WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("recurring.html", items=items)
+
+@app.route("/split_bills")
+@login_required
+def split_bills():
+    user_id = session["user_id"]
+    with connect_db() as db:
+        bills = db.execute("SELECT * FROM split_bills WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("split_bills.html", bills=bills)
+
+@app.route("/debts", methods=["GET", "POST"])
+@login_required
+def debt_tracker():
+    user_id = session["user_id"]
+    if request.method == "POST":
+        friend_name = request.form.get("friend_name")
+        amount = float(request.form.get("amount", 0))
+        dtype = request.form.get("type")
+        note = request.form.get("note", "")
+
+        with connect_db() as db:
+            db.execute("INSERT INTO debts (user_id, friend_name, amount, type, note) VALUES (?, ?, ?, ?, ?)", (user_id, friend_name, amount, dtype, note))
+        flash("Debt record added!")
+        return redirect(url_for("debt_tracker"))
+
+    with connect_db() as db:
+        debts = db.execute("SELECT * FROM debts WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("debts.html", debts=debts)
+
+@app.route("/settle_debt/<int:debt_id>", methods=["POST"])
+@login_required
+def settle_debt(debt_id):
+    user_id = session["user_id"]
+    with connect_db() as db:
+        db.execute("DELETE FROM debts WHERE id = ? AND user_id = ?", (debt_id, user_id))
+    flash("Debt settled!")
+    return redirect(url_for("debt_tracker"))
+
+@app.route("/insights")
+@login_required
+def spending_insights():
+    return render_template("insights.html")
+
+@app.route("/categories")
+@login_required
+def manage_categories():
+    user_id = session["user_id"]
+    with connect_db() as db:
+        cats = db.execute("SELECT * FROM categories WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("categories.html", categories=cats)
+
+@app.route("/emergency_fund")
+@login_required
+def emergency_fund():
+    user_id = session["user_id"]
+    with connect_db() as db:
+        fund = db.execute("SELECT * FROM emergency_fund WHERE user_id = ?", (user_id,)).fetchone()
+    return render_template("emergency_fund.html", fund=fund)
+
+@app.route("/subscriptions", methods=["GET", "POST"])
+@login_required
+def subscriptions():
+    user_id = session["user_id"]
+    if request.method == "POST":
+        service_name = request.form.get("service_name", "").strip()
         amount_text = request.form.get("amount", "")
+        renewal_date = request.form.get("renewal_date", "")
 
         try:
             amount = float(amount_text)
-
-            if (
-                not math.isfinite(amount)
-                or amount <= 0
-                or amount > 1000000000
-            ):
-                raise ValueError
-
+            parsed_date = date.fromisoformat(renewal_date)
         except (ValueError, TypeError):
-            flash("Enter a valid budget amount greater than zero.")
-            return redirect(url_for("budget_page"))
-
-        if not category or len(category) > 50:
-            flash("Enter a category name (maximum 50 characters).")
-            return redirect(url_for("budget_page"))
+            flash("Enter valid details.")
+            return redirect(url_for("subscriptions"))
 
         with connect_db() as db:
-            db.execute("""
-                INSERT INTO budgets (user_id, category, month, amount)
-                VALUES (?, ?, ?, ?)
-                ON CONFLICT(user_id, category, month)
-                DO UPDATE SET amount = excluded.amount
-            """, (user_id, category, current_month, amount))
+            db.execute("INSERT INTO subscriptions (user_id, service_name, amount, renewal_date) VALUES (?, ?, ?, ?)", (user_id, service_name, amount, parsed_date.isoformat()))
+        flash("Subscription added!")
+        return redirect(url_for("subscriptions"))
 
-        flash(f"Budget saved for {category}!")
-        return redirect(url_for("budget_page"))
-
-    # Current month's expenses grouped by category
-    expenses = get_expenses(user_id)
-    category_spending = {}
-
-    for expense in expenses:
-        if expense["date"][:7] == current_month:
-            category = expense["category"]
-            category_spending[category] = (
-                category_spending.get(category, 0)
-                + float(expense["amount"])
-            )
-
-    # Only this user's budgets for the current month
     with connect_db() as db:
-        rows = db.execute("""
-            SELECT category, amount
-            FROM budgets
-            WHERE user_id = ? AND month = ?
-            ORDER BY category
-        """, (user_id, current_month)).fetchall()
+        rows = db.execute("SELECT * FROM subscriptions WHERE user_id = ?", (user_id,)).fetchall()
+    return render_template("subscriptions.html", subs=rows)
 
-    budgets = []
+@app.route("/profile", methods=["GET", "POST"])
+@login_required
+def profile():
+    user_id = session["user_id"]
+    if request.method == "POST":
+        file = request.files.get("profile_pic")
+        if file and file.filename != '':
+            filename = f"user_{user_id}_{file.filename}"
+            upload_folder = os.path.join(BASE_DIR, "static", "uploads")
+            os.makedirs(upload_folder, exist_ok=True)
+            file.save(os.path.join(upload_folder, filename))
 
-    for row in rows:
-        category = row["category"]
-        limit_amount = float(row["amount"])
-        spent = category_spending.get(category, 0.0)
+            with connect_db() as db:
+                db.execute("UPDATE users SET profile_pic = ? WHERE id = ?", (filename, user_id))
+            flash("Profile picture updated!")
+            return redirect(url_for("profile"))
 
-        percent = (spent / limit_amount) * 100
-        remaining = limit_amount - spent
+    with connect_db() as db:
+        user = db.execute("SELECT * FROM users WHERE id = ?", (user_id,)).fetchone()
+    return render_template("profile.html", user=user)
 
-        if percent >= 100:
-            status = "over"
-        elif percent >= 80:
-            status = "warning"
-        else:
-            status = "safe"
-
-        budgets.append({
-            "category": category,
-            "amount": limit_amount,
-            "spent": spent,
-            "remaining": remaining,
-            "percent": round(percent, 1),
-            "bar_percent": min(round(percent, 1), 100),
-            "status": status,
-        })
-
-    return render_template(
-        "budgets.html",
-        budgets=budgets,
-        current_month=current_month,
-        category_spending=category_spending,
-    )
-
-
-
-# --------------------------------------------------
-# START APPLICATION
-# IMPORTANT: Keep this block at the very bottom.
-# --------------------------------------------------
-# --------------------------------------------------
-# START APPLICATION
-# --------------------------------------------------
-
-# Initialize database for Render and local use
 init_db()
 
 if __name__ == "__main__":

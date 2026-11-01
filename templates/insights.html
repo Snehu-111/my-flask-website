@@ -1,0 +1,40 @@
+{% extends 'base.html' %}
+
+{% block title %}Smart Insights - Student Finance{% endblock %}
+{% block heading %}Smart Spending Insights & Tips{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+    
+    {% if insights %}
+        <!-- Summary Cards -->
+        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 16px;">
+            <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 20px;">
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 6px;">Total Expenses Analyzed</p>
+                <h2 style="color: #10b981; margin: 0;">₹{{ insights.total_spent }}</h2>
+            </div>
+            <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 20px;">
+                <p style="color: #94a3b8; font-size: 14px; margin-bottom: 6px;">Highest Spending Category</p>
+                <h2 style="color: #6366f1; margin: 0;">{{ insights.highest_category }} ({{ insights.highest_percentage }}%)</h2>
+            </div>
+        </div>
+
+        <!-- Smart Tips Box -->
+        <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
+            <h3 style="color: #fff; margin-bottom: 16px;">🤖 AI Smart Financial Tips</h3>
+            <div style="display: flex; flex-direction: column; gap: 12px;">
+                {% for tip in insights.tips %}
+                    <div style="background: #0b1020; border: 1px solid #2a365f; padding: 14px 16px; border-radius: 8px; color: #cbd5e1; font-size: 15px;">
+                        {{ tip }}
+                    </div>
+                {% endfor %}
+            </div>
+        </div>
+    {% else %}
+        <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px; text-align: center;">
+            <p style="color: #94a3b8;">No expenses recorded yet to generate insights. Add some expenses first!</p>
+        </div>
+    {% endif %}
+
+</div>
+{% endblock %}

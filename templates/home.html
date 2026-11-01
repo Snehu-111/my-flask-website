@@ -1,39 +1,49 @@
-
-
 {% extends "base.html" %}
 
 {% block title %}Home | Student Finance{% endblock %}
 {% block heading %}Home{% endblock %}
 
 {% block content %}
-<section class="panel home-hero">
-    <p class="eyebrow">YOUR MONEY, YOUR FUTURE</p>
-    <h2>Take control of your finances.</h2>
-    <p class="muted">
-        Record expenses, understand your spending habits, and keep track
-        of your savings in one place.
-    </p>
-    <div class="home-actions">
-        <a class="primary-link" href="{{ url_for('index') }}">Open Dashboard →</a>
-        <a class="secondary-link" href="{{ url_for('expenses_page') }}">Manage Expenses</a>
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+    
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px;">
+        <p class="eyebrow">YOUR MONEY, YOUR FUTURE</p>
+        <h1 style="color: #fff; margin: 6px 0 12px 0; font-size: 26px;">Take control of your finances.</h1>
+        <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">Record expenses, understand your spending habits, and keep track of your savings in one place.</p>
+        <div style="display: flex; gap: 14px;">
+            <a href="{{ url_for('index') }}" style="background: var(--accent); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">Open Dashboard &rarr;</a>
+            <a href="{{ url_for('expenses_page') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">Manage Expenses</a>
+        </div>
     </div>
-</section>
 
-<section class="stats">
-    <article class="stat-card">
-        <span class="stat-icon purple">▦</span>
-        <h3>Track Expenses</h3>
-        <p class="muted">Keep your daily spending organised.</p>
-    </article>
-    <article class="stat-card">
-        <span class="stat-icon green">◈</span>
-        <h3>Manage Savings</h3>
-        <p class="muted">View your virtual wallet records.</p>
-    </article>
-    <article class="stat-card">
-        <span class="stat-icon blue">◎</span>
-        <h3>Private Account</h3>
-        <p class="muted">Your records are linked to your account.</p>
-    </article>
-</section>
+    <!-- Clickable Cards Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
+        
+        <!-- Track Expenses Card -->
+        <a href="{{ url_for('expenses_page') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">💳 Track Expenses</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">Keep your daily spending organised with categories and dates.</p>
+            </div>
+        </a>
+
+        <!-- Manage Savings Card -->
+        <a href="{{ url_for('wallet_page') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">👛 Manage Savings</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">View your virtual wallet records and emergency funds securely.</p>
+            </div>
+        </a>
+
+        <!-- Private Account Card -->
+        <a href="{{ url_for('profile') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
+            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
+                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">🔒 Private Account</h3>
+                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">Your records are securely linked exclusively to your user account.</p>
+            </div>
+        </a>
+
+    </div>
+
+</div>
 {% endblock %}

@@ -1,0 +1,63 @@
+{% extends 'base.html' %}
+
+{% block title %}Savings Goals - Student Finance{% endblock %}
+{% block heading %}Financial Goal-Based Savings Planner{% endblock %}
+
+{% block content %}
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+    
+    <!-- Add Goal Form -->
+    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">🎯 Create New Savings Goal</h3>
+        <form method="POST">
+            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
+                <div>
+                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Goal Name</label>
+                    <input type="text" name="goal_name" placeholder="e.g. New Laptop" required style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Target Amount (₹)</label>
+                    <input type="number" step="0.01" name="target_amount" placeholder="50000" required style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
+                </div>
+                <div>
+                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Initial Saved (Optional)</label>
+                    <input type="number" step="0.01" name="saved_amount" placeholder="0" style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
+                </div>
+            </div>
+            <button type="submit" style="background: #6366f1; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Goal</button>
+        </form>
+    </div>
+
+    <!-- Goals List -->
+    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
+        <h3 style="color: #fff; margin-bottom: 16px;">Your Active Goals</h3>
+        {% if goals %}
+            <div style="display: flex; flex-direction: column; gap: 16px;">
+                {% for goal in goals %}
+                    <div style="background: #0b1020; border: 1px solid #2a365f; padding: 16px; border-radius: 10px;">
+                        <div style="display: flex; justify-content: space-between; margin-bottom: 8px;">
+                            <span style="color: #fff; font-weight: 600; font-size: 16px;">{{ goal.goal_name }}</span>
+                            <span style="color: #10b981; font-weight: 600;">₹{{ goal.saved_amount }} / ₹{{ goal.target_amount }}</span>
+                        </div>
+                        <!-- Progress Bar -->
+                        <div style="background: #1f2a48; border-radius: 6px; height: 10px; width: 100%; overflow: hidden; margin-bottom: 12px;">
+                            {% set percent = (goal.saved_amount / goal.target_amount * 100) if goal.target_amount > 0 else 0 %}
+                            <div style="background: #10b981; height: 100%; width: {{ percent if percent <= 100 else 100 }}%;"></div>
+                        </div>
+                        <!-- Add progress form -->
+                        <form action="{{ url_for('update_goal', goal_id=goal.id) }}" method="POST" style="display: flex; gap: 10px;">
+                            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
+                            <input type="number" step="0.01" name="add_amount" placeholder="Add savings amount" required style="padding: 6px 10px; background: #131b31; border: 1px solid #2a365f; color: #fff; border-radius: 6px; font-size: 13px;">
+                            <button type="submit" style="background: #3b82f6; color: #fff; border: none; padding: 6px 14px; border-radius: 6px; font-size: 13px; cursor: pointer;">Add to Goal</button>
+                        </form>
+                    </div>
+                {% endfor %}
+            </div>
+        {% else %}
+            <p style="color: #94a3b8;">No savings goals created yet!</p>
+        {% endif %}
+    </div>
+
+</div>
+{% endblock %}

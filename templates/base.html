@@ -1,90 +1,311 @@
-
 <!DOCTYPE html>
 <html lang="en">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <meta name="theme-color" content="#0b1020">
-    <title>{% block title %}Student Finance{% endblock %}</title>
-    <link rel="stylesheet" href="{{ url_for('static', filename='style.css') }}">
+    <title>{% block title %}Student Finance Tracker{% endblock %}</title>
+    <style>
+        :root {
+            --bg-main: #0b1020;
+            --bg-sidebar: #070a14;
+            --panel-bg: #131b31;
+            --border-color: #1f2a48;
+            --text-main: #ffffff;
+            --text-muted: #94a3b8;
+            --accent: #6366f1;
+            --accent-hover: #4f46e5;
+            --success: #10b981;
+        }
+
+        * {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg-main);
+            color: var(--text-main);
+            display: flex;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        /* Sidebar Styling */
+        .sidebar {
+            width: 260px;
+            background-color: var(--bg-sidebar);
+            border-right: 1px solid var(--border-color);
+            display: flex;
+            flex-direction: column;
+            transition: transform 0.3s ease, width 0.3s ease;
+            height: 100%;
+            z-index: 1000;
+            flex-shrink: 0;
+        }
+
+        .sidebar.collapsed {
+            transform: translateX(-260px);
+            width: 0;
+            overflow: hidden;
+        }
+
+        .sidebar-header {
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            border-bottom: 1px solid var(--border-color);
+            font-weight: bold;
+            font-size: 16px;
+            color: var(--text-main);
+        }
+
+        .sidebar-links {
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        .sidebar-links::-webkit-scrollbar {
+            width: 4px;
+        }
+        .sidebar-links::-webkit-scrollbar-thumb {
+            background: var(--border-color);
+            border-radius: 4px;
+        }
+
+        .sidebar-links a {
+            color: var(--text-muted);
+            text-decoration: none;
+            padding: 10px 14px;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            transition: all 0.2s;
+        }
+
+        .sidebar-links a:hover, .sidebar-links a.active {
+            background-color: var(--accent);
+            color: var(--text-main);
+        }
+
+        .menu-label {
+            font-size: 11px;
+            color: var(--text-muted);
+            margin: 14px 14px 4px 14px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            font-weight: 600;
+        }
+
+        /* Main Container Styling */
+        .main-container {
+            flex-grow: 1;
+            display: flex;
+            flex-direction: column;
+            height: 100vh;
+            overflow: hidden;
+        }
+
+        .top-navbar {
+            padding: 15px 25px;
+            background-color: var(--bg-sidebar);
+            border-bottom: 1px solid var(--border-color);
+            display: flex;
+            align-items: center;
+            gap: 20px;
+            flex-shrink: 0;
+        }
+
+        .toggle-btn {
+            background: #131b31;
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            padding: 8px 14px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            transition: background 0.2s;
+        }
+        .toggle-btn:hover {
+            background: var(--border-color);
+        }
+
+        .content-body {
+            padding: 30px;
+            overflow-y: auto;
+            flex-grow: 1;
+        }
+
+        /* Panel Card Styling (Restoring Clean UI Boxes) */
+        .panel {
+            background: var(--panel-bg);
+            border: 1px solid var(--border-color);
+            border-radius: 12px;
+            padding: 24px;
+            margin-bottom: 24px;
+        }
+
+        .panel-heading {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+            flex-wrap: wrap;
+            gap: 12px;
+        }
+
+        .eyebrow {
+            font-size: 12px;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            margin: 0 0 4px 0;
+            font-weight: 600;
+        }
+
+        h2 {
+            margin: 0;
+            font-size: 22px;
+            color: var(--text-main);
+        }
+
+        /* Form & Inputs Styling */
+        form label {
+            display: block;
+            font-size: 14px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+        }
+
+        form input, form select {
+            width: 100%;
+            padding: 10px 14px;
+            background: var(--bg-main);
+            border: 1px solid var(--border-color);
+            color: var(--text-main);
+            border-radius: 8px;
+            margin-top: 6px;
+            font-size: 14px;
+        }
+
+        form input:focus, form select:focus {
+            outline: none;
+            border-color: var(--accent);
+        }
+
+        /* Tables Styling */
+        .table-wrap {
+            overflow-x: auto;
+        }
+
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            color: var(--text-main);
+        }
+
+        th {
+            text-align: left;
+            padding: 12px;
+            color: var(--text-muted);
+            border-bottom: 1px solid var(--border-color);
+            font-size: 13px;
+        }
+
+        td {
+            padding: 12px;
+            border-bottom: 1px solid var(--border-color);
+            font-size: 14px;
+        }
+
+        .live-badge {
+            background: #10b98122;
+            color: var(--success);
+            padding: 4px 10px;
+            border-radius: 20px;
+            font-size: 12px;
+            font-weight: 600;
+        }
+
+        .delete-button {
+            background: #ef444433;
+            color: #ef4444;
+            border: none;
+            padding: 6px 12px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 12px;
+            font-weight: 600;
+        }
+        .delete-button:hover {
+            background: #ef444455;
+        }
+    </style>
 </head>
-<body class="app-layout">
+<body>
 
-    <aside class="sidebar">
-        <a href="{{ url_for('index') }}" class="brand">
-            <span class="brand-icon">S</span>
-            <span>Student Finance</span>
-        </a>
-
-        <p class="sidebar-label">MENU</p>
-
-        <nav class="sidebar-nav">
-            <a href="{{ url_for('index') }}"
-               class="{% if request.endpoint == 'index' %}active{% endif %}">
-                <span>▦</span> Dashboard
-            </a>
-
-            <a href="{{ url_for('home') }}"
-               class="{% if request.endpoint == 'home' %}active{% endif %}">
-                <span>⌂</span> Home
-            </a>
-
-            <a href="{{ url_for('expenses_page') }}"
-               class="{% if request.endpoint == 'expenses_page' %}active{% endif %}">
-                <span>▤</span> Expenses
-            </a>
-
-            <a href="{{ url_for('wallet_page') }}"
-               class="{% if request.endpoint == 'wallet_page' %}active{% endif %}">
-                <span>◈</span> Wallet
-            </a>
-            <a href="{{ url_for('budget_page') }}"
-   class="{% if request.endpoint == 'budget_page' %}active{% endif %}">
-    <span>Monthly Budget</span>
-</a>
-
-            <a href="{{ url_for('profile') }}"
-               class="{% if request.endpoint == 'profile' %}active{% endif %}">
-                <span>◎</span> Profile
-            </a>
-        </nav>
-
-        <div class="sidebar-bottom">
-            <div class="user-chip">
-                <span class="avatar">{{ session.get('username', 'S')[:1]|upper }}</span>
-                <span class="user-name">{{ session.get('username', 'Student') }}</span>
-            </div>
-
-            <form method="POST" action="{{ url_for('logout') }}">
-                <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-                <button type="submit" class="sidebar-logout">↪ Logout</button>
-            </form>
+    <!-- Sidebar Menu -->
+    <div class="sidebar" id="sidebar">
+        <div class="sidebar-header">
+            <span>🎓 Student Finance</span>
         </div>
-    </aside>
+        <div class="sidebar-links">
+            <div class="menu-label">Main Menu</div>
+            <a href="{{ url_for('index') }}" class="{% if request.endpoint == 'index' %}active{% endif %}">📊 Dashboard</a>
+            <a href="{{ url_for('home') }}" class="{% if request.endpoint == 'home' %}active{% endif %}">🏠 Home</a>
+            <a href="{{ url_for('expenses_page') }}" class="{% if request.endpoint == 'expenses_page' %}active{% endif %}">💳 Expenses</a>
+            <a href="{{ url_for('wallet_page') }}" class="{% if request.endpoint == 'wallet_page' %}active{% endif %}">👛 Wallet</a>
+            <a href="{{ url_for('budget_page') }}" class="{% if request.endpoint == 'budget_page' %}active{% endif %}">📑 Monthly Budget</a>
+            <a href="{{ url_for('savings_goals') }}" class="{% if request.endpoint == 'savings_goals' %}active{% endif %}">🎯 Savings Goals</a>
 
-    <main class="main-content">
-        <header class="topbar">
-            <div>
-                <p class="eyebrow">STUDENT FINANCE MANAGER</p>
-                <h1>{% block heading %}Dashboard{% endblock %}</h1>
-            </div>
-            <span class="topbar-status">● Account active</span>
-        </header>
+            <div class="menu-label">Advanced Tools</div>
+            <a href="{{ url_for('recurring_expenses') }}" class="{% if request.endpoint == 'recurring_expenses' %}active{% endif %}">🔄 Recurring</a>
+            <a href="{{ url_for('split_bills') }}" class="{% if request.endpoint == 'split_bills' %}active{% endif %}">👥 Split Bills</a>
+            <a href="{{ url_for('debt_tracker') }}" class="{% if request.endpoint == 'debt_tracker' %}active{% endif %}">🤝 Debt Tracker</a>
+            <a href="{{ url_for('spending_insights') }}" class="{% if request.endpoint == 'spending_insights' %}active{% endif %}">💡 Smart Insights</a>
+            <a href="{{ url_for('manage_categories') }}" class="{% if request.endpoint == 'manage_categories' %}active{% endif %}">🏷️ Categories</a>
+            <a href="{{ url_for('emergency_fund') }}" class="{% if request.endpoint == 'emergency_fund' %}active{% endif %}">🛡️ Emergency Fund</a>
+            <a href="{{ url_for('subscriptions') }}" class="{% if request.endpoint == 'subscriptions' %}active{% endif %}">🔔 Subscriptions</a>
 
-        {% with messages = get_flashed_messages() %}
-            {% if messages %}
-                {% for message in messages %}
-                    <div class="notice">{{ message }}</div>
-                {% endfor %}
-            {% endif %}
-        {% endwith %}
+            <div class="menu-label">User</div>
+            <a href="{{ url_for('profile') }}" class="{% if request.endpoint == 'profile' %}active{% endif %}">👤 Profile</a>
+        </div>
+    </div>
 
-        {% block content %}{% endblock %}
+    <!-- Main Content Area -->
+    <div class="main-container">
+        <div class="top-navbar">
+            <button class="toggle-btn" onclick="toggleSidebar()">☰ Menu</button>
+            <h2 style="margin: 0; font-size: 18px;">{% block heading %}Dashboard{% endblock %}</h2>
+        </div>
 
-        <footer class="footer">
-            <p>Made for students 💙</p>
-            <span>One small saving at a time.</span>
-        </footer>
-    </main>
+        <div class="content-body">
+            {% with messages = get_flashed_messages() %}
+                {% if messages %}
+                    <div style="background: #1e293b; border-left: 4px solid var(--accent); padding: 12px 16px; margin-bottom: 20px; border-radius: 6px;">
+                        {% for message in messages %}
+                            <p style="margin: 0; font-size: 14px; color: #e2e8f0;">{{ message }}</p>
+                        {% endfor %}
+                    </div>
+                {% endif %}
+            {% endwith %}
+
+            {% block content %}{% endblock %}
+        </div>
+    </div>
+
+    <script>
+        function toggleSidebar() {
+            const sidebar = document.getElementById('sidebar');
+            sidebar.classList.toggle('collapsed');
+        }
+    </script>
 </body>
 </html>
