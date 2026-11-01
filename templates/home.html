@@ -1,48 +1,66 @@
 {% extends "base.html" %}
 
 {% block title %}Home | Student Finance{% endblock %}
-{% block heading %}Home{% endblock %}
+{% block heading %}Welcome to Student Finance Tracker{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+<div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
     
-    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px;">
-        <p class="eyebrow">YOUR MONEY, YOUR FUTURE</p>
-        <h1 style="color: #fff; margin: 6px 0 12px 0; font-size: 26px;">Take control of your finances.</h1>
-        <p style="color: var(--text-muted); font-size: 15px; margin-bottom: 20px;">Record expenses, understand your spending habits, and keep track of your savings in one place.</p>
-        <div style="display: flex; gap: 14px;">
-            <a href="{{ url_for('index') }}" style="background: var(--accent); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">Open Dashboard &rarr;</a>
-            <a href="{{ url_for('expenses_page') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); color: #fff; padding: 10px 20px; border-radius: 8px; text-decoration: none; font-weight: 600;">Manage Expenses</a>
+    <!-- Hero Banner Card -->
+    <div style="background: linear-gradient(135deg, #1e1b4b 0%, #1e293b 100%); border: 1px solid var(--border-color); border-radius: 16px; padding: 40px; width: 100%;">
+        <span style="color: var(--accent); font-weight: 600; text-transform: uppercase; letter-spacing: 1px; font-size: 13px;">YOUR MONEY, YOUR FUTURE</span>
+        <h1 style="font-size: 36px; font-weight: 800; color: #fff; margin: 12px 0;">Take control of your finances.</h1>
+        <p style="color: var(--text-muted); font-size: 16px; max-width: 700px; margin-bottom: 28px; line-height: 1.6;">
+            Record expenses, understand your spending habits, manage debts, and track your savings easily in one place.
+        </p>
+        <div style="display: flex; gap: 16px; flex-wrap: wrap;">
+            <a href="{{ url_for('index') }}" style="background: var(--accent); color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; display: inline-block;">Open Dashboard →</a>
+            <a href="{{ url_for('expenses_page') }}" style="background: rgba(255,255,255,0.08); border: 1px solid var(--border-color); color: #fff; text-decoration: none; padding: 12px 28px; border-radius: 8px; font-weight: 600; display: inline-block;">Manage Expenses</a>
         </div>
     </div>
 
-    <!-- Clickable Cards Grid -->
-    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(260px, 1fr)); gap: 20px;">
-        
-        <!-- Track Expenses Card -->
-        <a href="{{ url_for('expenses_page') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
-                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">💳 Track Expenses</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">Keep your daily spending organised with categories and dates.</p>
-            </div>
-        </a>
+    <!-- Quick Overview Features Grid -->
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; width: 100%;">
+        <div class="panel" style="margin: 0;">
+            <h3 style="font-size: 18px; margin-bottom: 8px;">💳 Track Expenses</h3>
+            <p style="color: var(--text-muted); font-size: 14px; line-height: 1.5;">Keep your daily spending organised with categories, dates, and instant CSV export.</p>
+        </div>
+        <div class="panel" style="margin: 0;">
+            <h3 style="font-size: 18px; margin-bottom: 8px;">👛 Manage Savings</h3>
+            <p style="color: var(--text-muted); font-size: 14px; line-height: 1.5;">View your virtual wallet records, emergency funds, and progress on savings goals.</p>
+        </div>
+        <div class="panel" style="margin: 0;">
+            <h3 style="font-size: 18px; margin-bottom: 8px;">🔒 Private Account</h3>
+            <p style="color: var(--text-muted); font-size: 14px; line-height: 1.5;">Your financial records are securely linked exclusively to your personal account.</p>
+        </div>
+    </div>
 
-        <!-- Manage Savings Card -->
-        <a href="{{ url_for('wallet_page') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
-                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">👛 Manage Savings</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">View your virtual wallet records and emergency funds securely.</p>
+    <!-- Additional Full-Width Quick Tools Section -->
+    <div class="panel" style="margin: 0; width: 100%;">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">QUICK ACCESS</p>
+                <h2>Financial Toolkit</h2>
             </div>
-        </a>
-
-        <!-- Private Account Card -->
-        <a href="{{ url_for('profile') }}" style="text-decoration: none; color: inherit; display: block; transition: transform 0.2s;" onmouseover="this.style.transform='translateY(-3px)'" onmouseout="this.style.transform='translateY(0)'">
-            <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; height: 100%;">
-                <h3 style="color: #fff; margin-top: 0; font-size: 18px;">🔒 Private Account</h3>
-                <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 0;">Your records are securely linked exclusively to your user account.</p>
-            </div>
-        </a>
-
+        </div>
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 16px;">
+            <a href="{{ url_for('budget_page') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; text-decoration: none; color: #fff;">
+                <h4 style="margin: 0 0 6px 0;">📑 Monthly Budget</h4>
+                <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Set category-wise budget limits.</p>
+            </a>
+            <a href="{{ url_for('debt_tracker') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; text-decoration: none; color: #fff;">
+                <h4 style="margin: 0 0 6px 0;">🤝 Udari / Debt Tracker</h4>
+                <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Track money given or borrowed.</p>
+            </a>
+            <a href="{{ url_for('subscriptions') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; text-decoration: none; color: #fff;">
+                <h4 style="margin: 0 0 6px 0;">🔔 Subscriptions</h4>
+                <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Manage active monthly services.</p>
+            </a>
+            <a href="{{ url_for('emergency_fund') }}" style="background: var(--bg-main); border: 1px solid var(--border-color); padding: 16px; border-radius: 10px; text-decoration: none; color: #fff;">
+                <h4 style="margin: 0 0 6px 0;">🛡️ Emergency Fund</h4>
+                <p style="margin: 0; color: var(--text-muted); font-size: 13px;">Keep backup funds secure.</p>
+            </a>
+        </div>
     </div>
 
 </div>

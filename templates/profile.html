@@ -1,46 +1,38 @@
 {% extends "base.html" %}
 
 {% block title %}Profile | Student Finance{% endblock %}
-{% block heading %}My Profile{% endblock %}
+{% block heading %}User Profile{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 24px; max-width: 800px;">
+<div style="display: flex; flex-direction: column; gap: 24px; max-width: 600px; margin: 0 auto;">
     
-    <!-- Profile Card -->
-    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 30px; display: flex; align-items: center; gap: 24px; flex-wrap: wrap;">
+    <!-- Profile Info & Picture Card -->
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px; text-align: center;">
+        <h3 style="color: #fff; margin-top: 0; margin-bottom: 20px;">👤 My Profile</h3>
         
-        <!-- Profile Picture / Avatar -->
-        <div>
+        <!-- Profile Picture Display -->
+        <div style="margin-bottom: 20px;">
             {% if user.profile_pic %}
-                <img src="{{ url_for('static', filename='uploads/' + user.profile_pic) }}" alt="Profile Picture" style="width: 90px; height: 90px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
+                <img src="{{ url_for('static', filename='uploads/' ~ user.profile_pic) }}" alt="Profile Picture" style="width: 120px; height: 120px; border-radius: 50%; object-fit: cover; border: 2px solid var(--accent);">
             {% else %}
-                <div style="width: 90px; height: 90px; border-radius: 50%; background: var(--accent); color: #fff; display: flex; align-items: center; justify-content: center; font-size: 34px; font-weight: bold;">
-                    {{ user.username[0]|upper }}
-                </div>
+                <div style="width: 120px; height: 120px; border-radius: 50%; background: var(--bg-main); border: 2px solid var(--border-color); display: flex; align-items: center; justify-content: center; margin: 0 auto; color: var(--text-muted); font-size: 40px;">👤</div>
             {% endif %}
         </div>
 
-        <!-- User Info -->
-        <div style="flex-grow: 1;">
-            <p class="eyebrow" style="margin-bottom: 4px;">ACCOUNT DETAILS</p>
-            <h2 style="margin: 0 0 6px 0; color: #fff; font-size: 24px;">{{ user.username }}</h2>
-            <p style="color: var(--text-muted); margin: 0; font-size: 14px;">Student Expense Tracker member</p>
-            <p style="color: var(--text-muted); margin: 6px 0 0 0; font-size: 13px;">Account status: <strong style="color: var(--success);">Logged in</strong></p>
-        </div>
+        <h4 style="color: #fff; margin: 0 0 5px 0;">Username: {{ user.username }}</h4>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">Manage your account details and profile picture.</p>
 
+        <!-- Upload Form -->
+        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 14px; align-items: center;">
+            <input type="file" name="profile_pic" accept="image/*" required style="color: var(--text-muted); font-size: 14px;">
+            <button type="submit" style="background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Upload New Picture</button>
+        </form>
     </div>
 
-    <!-- Upload Picture Panel -->
-    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 24px;">
-        <h3 style="margin-top: 0; color: #fff; font-size: 18px; margin-bottom: 16px;">📸 Update Profile Picture</h3>
-        <form method="POST" enctype="multipart/form-data" style="display: flex; flex-direction: column; gap: 16px;">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div>
-                <label style="color: var(--text-muted); font-size: 14px; display: block; margin-bottom: 6px;">Select image file</label>
-                <input type="file" name="profile_pic" accept="image/*" required style="padding: 10px; background: var(--bg-main); border: 1px solid var(--border-color); color: var(--text-muted); border-radius: 8px; width: 100%;">
-            </div>
-            <button type="submit" style="background: var(--accent); color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; align-self: flex-start;">Upload Picture</button>
-        </form>
+    <!-- Logout Section -->
+    <div style="background: var(--panel-bg); border: 1px solid var(--border-color); border-radius: 12px; padding: 20px; text-align: center;">
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 12px;">Finished using your account?</p>
+        <a href="{{ url_for('logout') }}" style="display: inline-block; background: rgba(239, 68, 68, 0.1); border: 1px solid #ef4444; color: #ef4444; padding: 10px 24px; border-radius: 8px; text-decoration: none; font-weight: 600;">🚪 Logout from Account</a>
     </div>
 
 </div>

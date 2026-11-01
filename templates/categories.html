@@ -1,35 +1,42 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Manage Categories - Student Finance{% endblock %}
-{% block heading %}Custom Category Manager{% endblock %}
+{% block title %}Categories | Student Finance{% endblock %}
+{% block heading %}Manage Categories{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+<div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
     
-    <!-- Add Category Form -->
-    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
-        <h3 style="color: #fff; margin-bottom: 16px;">🏷️ Add New Custom Category</h3>
-        <form method="POST">
-            <div style="display: flex; gap: 16px; margin-bottom: 16px;">
-                <input type="text" name="category_name" placeholder="e.g. Gym, Stationery, Project" required style="flex: 1; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
-                <button type="submit" style="background: #6366f1; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Add Category</button>
+    <div class="panel" style="margin: 0; width: 100%;">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">CUSTOM LABELS</p>
+                <h2>Expense Categories</h2>
             </div>
-        </form>
-    </div>
+        </div>
 
-    <!-- Category List -->
-    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
-        <h3 style="color: #fff; margin-bottom: 16px;">Your Custom Categories</h3>
+        <p style="color: var(--text-muted); font-size: 14px; margin-bottom: 20px;">
+            Organize your transactions neatly using customized categories.
+        </p>
+
         {% if categories %}
-            <div style="display: flex; flex-wrap: wrap; gap: 10px;">
-                {% for cat in categories %}
-                    <span style="background: #0b1020; border: 1px solid #2a365f; color: #10b981; padding: 8px 14px; border-radius: 8px; font-weight: 600; font-size: 14px;">
-                        {{ cat.category_name }}
-                    </span>
-                {% endfor %}
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Category Name</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for c in categories %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ c.name }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
             </div>
         {% else %}
-            <p style="color: #94a3b8;">No custom categories added yet. Add one above!</p>
+            <p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px;">No custom categories found.</p>
         {% endif %}
     </div>
 

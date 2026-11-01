@@ -1,58 +1,66 @@
-{% extends 'base.html' %}
+{% extends "base.html" %}
 
-{% block title %}Subscriptions - Student Finance{% endblock %}
-{% block heading %}Subscription & Bills Reminder{% endblock %}
+{% block title %}Subscriptions | Student Finance{% endblock %}
+{% block heading %}Active Subscriptions{% endblock %}
 
 {% block content %}
-<div style="display: flex; flex-direction: column; gap: 24px; max-width: 900px;">
+<div style="display: flex; flex-direction: column; gap: 24px; width: 100%;">
     
-    <!-- Add Subscription Form -->
-    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
-        <h3 style="color: #fff; margin-bottom: 16px;">🔔 Add Subscription / Bill</h3>
-        <form method="POST">
-            <input type="hidden" name="csrf_token" value="{{ csrf_token }}">
-            <div style="display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 16px; margin-bottom: 16px;">
-                <div>
-                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Service Name</label>
-                    <input type="text" name="service_name" placeholder="e.g. Netflix, Wi-Fi" required style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Amount (₹)</label>
-                    <input type="number" step="0.01" name="amount" placeholder="199" required style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
-                </div>
-                <div>
-                    <label style="color: #94a3b8; font-size: 14px; display: block; margin-bottom: 6px;">Renewal Date</label>
-                    <input type="date" name="renewal_date" required style="width: 100%; padding: 10px; background: #0b1020; border: 1px solid #2a365f; color: #fff; border-radius: 8px;">
-                </div>
+    <!-- Add Subscription Panel -->
+    <div class="panel" style="margin: 0; width: 100%;">
+        <div class="panel-heading">
+            <div>
+                <p class="eyebrow">RECURRING BILLS</p>
+                <h2>Add Subscription</h2>
             </div>
-            <button type="submit" style="background: #6366f1; color: #fff; border: none; padding: 10px 20px; border-radius: 8px; font-weight: 600; cursor: pointer;">Save Reminder</button>
+        </div>
+
+        <form method="POST" style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)) 120px; gap: 16px; align-items: end;">
+            <div>
+                <label>Service Name</label>
+                <input type="text" name="service_name" placeholder="e.g. Netflix / Spotify" required>
+            </div>
+            <div>
+                <label>Monthly Amount (₹)</label>
+                <input type="number" step="0.01" name="amount" placeholder="e.g. 199" required>
+            </div>
+            <div>
+                <label>Renewal Date</label>
+                <input type="date" name="renewal_date" required>
+            </div>
+            <div>
+                <button type="submit" style="background: var(--accent); color: #fff; border: none; padding: 11px 20px; border-radius: 8px; font-weight: 600; cursor: pointer; width: 100%; height: 42px;">Save</button>
+            </div>
         </form>
     </div>
 
-    <!-- Active Subscriptions List -->
-    <div style="background: #131b31; border: 1px solid #1f2a48; border-radius: 12px; padding: 24px;">
-        <h3 style="color: #fff; margin-bottom: 16px;">Active Reminders</h3>
+    <!-- Subscriptions List Panel -->
+    <div class="panel" style="margin: 0; width: 100%;">
+        <h3 style="margin-bottom: 16px;">Your Subscriptions</h3>
+        
         {% if subs %}
-            <table style="width: 100%; color: #fff; border-collapse: collapse;">
-                <thead>
-                    <tr style="border-bottom: 1px solid #1f2a48; text-align: left; color: #94a3b8;">
-                        <th style="padding: 10px;">Service</th>
-                        <th style="padding: 10px;">Amount</th>
-                        <th style="padding: 10px;">Renewal Date</th>
-                    </tr>
-                </thead>
-                <tbody>
-                    {% for sub in subs %}
-                    <tr style="border-bottom: 1px solid #1f2a48;">
-                        <td style="padding: 12px; font-weight: 600;">{{ sub.service_name }}</td>
-                        <td style="padding: 12px; font-weight: 600;">₹{{ sub.amount }}</td>
-                        <td style="padding: 12px; color: #94a3b8;">{{ sub.renewal_date }}</td>
-                    </tr>
-                    {% endfor %}
-                </tbody>
-            </table>
+            <div class="table-wrap">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Service Name</th>
+                            <th>Amount</th>
+                            <th>Renewal Date</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for s in subs %}
+                        <tr>
+                            <td style="font-weight: 600;">{{ s.service_name }}</td>
+                            <td style="color: #ef4444; font-weight: 600;">₹{{ "%.2f"|format(s.amount) }}</td>
+                            <td style="color: var(--text-muted);">{{ s.renewal_date }}</td>
+                        </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
         {% else %}
-            <p style="color: #94a3b8;">No subscription reminders added yet!</p>
+            <p style="color: var(--text-muted); font-size: 14px; text-align: center; padding: 20px;">No subscriptions recorded.</p>
         {% endif %}
     </div>
 
