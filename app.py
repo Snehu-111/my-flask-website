@@ -4,6 +4,7 @@ import math
 from datetime import date
 from flask import Flask, render_template, request, redirect, url_for, session, flash, send_file
 from functools import wraps
+from werkzeug.security import generate_password_hash, check_password_hash
 import csv
 import io
 
@@ -123,16 +124,56 @@ def login_required(f):
     @wraps(f)
     def wrapped(*args, **kwargs):
         if "user_id" not in session:
-            with connect_db() as db:
-                user = db.execute("SELECT * FROM users WHERE username = 'sarthak'").fetchone()
-                if not user:
-                    db.execute("INSERT INTO users (username, password) VALUES (?, ?)", ("sarthak", "password"))
-                    user = db.execute("SELECT * FROM users WHERE username = 'sarthak'").fetchone()
-                session["user_id"] = user["id"]
-                session["username"] = user["username"]
+            flash("Please log in first.")
+            return redirect(url_for("login"))
         return f(*args, **kwargs)
     return wrapped
 
+# --- AUTH ROUTES ---
+@app.route("/login", methods=["GET", "POST"])
+def login():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        with connect_db() as db:
+            user = db.execute("SELECT * FROM users WHERE username = ?", (username,)).fetchone()
+
+        if user and check_password_hash(user["password"], password):
+            session["user_id"] = user["id"]
+            session["username"] = user["username"]
+            return redirect(url_for("index"))
+        
+        flash("Invalid username or password.")
+    return render_template("login.html")
+
+@app.route("/register", methods=["GET", "POST"])
+def register():
+    if request.method == "POST":
+        username = request.form.get("username", "").strip()
+        password = request.form.get("password", "")
+
+        if not username or not password:
+            flash("All fields are required.")
+            return redirect(url_for("register"))
+
+        hashed_pw = generate_password_hash(password)
+
+        try:
+            with connect_db() as db:
+                db.execute("INSERT INTO users (username, password) VALUES (?, ?)", (username, hashed_pw))
+            flash("Registered successfully! Please log in.")
+            return redirect(url_for("login"))
+        except sqlite3.IntegrityError:
+            flash("Username already exists.")
+    return render_template("register.html")
+
+@app.route("/logout")
+def logout():
+    session.clear()
+    return redirect(url_for("login"))
+
+# --- APP ROUTES ---
 @app.route("/")
 @login_required
 def index():
